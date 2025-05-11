@@ -31,11 +31,14 @@ public class ProductController {
                             @RequestHeader(value = "referer", required = false) String referer) {
         Product product = productRepository.getReferenceById(id);
 
-        if ("plus".equals(action)) {
-            product.setCount(product.getCount() + 1);
-        } else if ("minus".equals(action)) {
-            product.setCount(Math.max(0, product.getCount() - 1));
-        }
+        Integer count = switch (action) {
+            case "plus" -> product.getCount() + 1;
+            case "minus" -> Math.max(0, product.getCount() - 1);
+            case "delete" -> 0;
+            default -> throw new IllegalStateException("Unexpected value: " + action);
+        };
+
+        product.setCount(count);
 
         productRepository.save(product);
 
