@@ -24,7 +24,7 @@ public class ProductController {
         return "product";
     }
 
-    @PostMapping({"/products/{id}", "/main/products/{id}"})
+    @PostMapping({"/products/{id}", "/main/products/{id}", "/cart/products/{id}"})
     public String addToCart(Model model,
                             @PathVariable("id") Long id,
                             @RequestParam("action") String action,
