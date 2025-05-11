@@ -74,7 +74,7 @@
                                 <button name="action" value="minus">-</button>
                                 <span th:text="${product.getCount()}"></span>
                                 <button name="action" value="plus">+</button>
-                                <button name="action" value="plus" th:if="${item.getCount()==0}" style="float:right;">В корзину</button>
+                                <button name="action" value="plus" th:if="${product.getCount()==0}" style="float:right;">В корзину</button>
                             </form>
                         </td>
                     </tr>
