@@ -19,28 +19,28 @@
 <table style="width:70%;margin-left:auto;margin-right:auto;">
     <tr>
         <td>
-            <h2 th:text="${'Заказ №'+order.id()}"></h2>
+            <h2 th:text="${'Заказ №'+order.getId()}"></h2>
         </td>
     </tr>
-    <tr th:each="product : ${order.products()}">
+    <tr th:each="product : ${order.getProducts()}">
         <td>
             <table>
                 <tr>
                     <td>
-                        <a th:href="${'/products/'+product.getId()}">
-                            <img width="300" height="300" th:src="${'http://localhost:8080/'+product.getImgPath()}">
+                        <a th:href="${'/products/'+product.getProduct().getId()}">
+                            <img width="300" height="300" th:src="${'http://localhost:8080/'+product.getProduct().getImgPath()}">
                         </a>
                     </td>
                 </tr>
                 <tr>
                     <td>
-                        <b th:text="${product.getName()}"></b>
+                        <b th:text="${product.getProduct().getName()}"></b>
                     </td>
                     <td>
-                        <b th:text="${product.getCount()}+' шт.'"></b>
+                        <b th:text="${product.getQuantity()}+' шт.'"></b>
                     </td>
                     <td>
-                        <b th:text="${product.getPrice()*product.getCount()}+' руб.'"></b>
+                        <b th:text="${product.getProduct().getPrice()*product.getQuantity()}+' руб.'"></b>
                     </td>
                 </tr>
             </table>
@@ -48,7 +48,7 @@
     </tr>
     <tr>
         <td>
-            <h3 th:text="${'Сумма: '+order.totalSum()}+' руб.'"></h3>
+            <h3 th:text="${'Сумма: '+order.getTotalSum()}+' руб.'"></h3>
         </td>
     </tr>
 </table>
