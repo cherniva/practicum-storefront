@@ -12,6 +12,7 @@
 <a href="/main/products" style="float:right;">
     <b>ГЛАВНАЯ &cudarrr;</b>
 </a>
+<h2 th:text="${numOrders + ' заказов на сумму ' + totalSum + ' руб'}"></h2>
 <table style="width:70%;margin-left:auto;margin-right:auto;">
     <tr th:each="order : ${orders}">
         <td>

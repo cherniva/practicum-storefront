@@ -61,11 +61,13 @@ public class OrderController {
         List<CustomerOrder> orders = orderRepository.findAll();
 
         model.addAttribute("orders", orders);
+        model.addAttribute("numOrders", orders.size());
+        model.addAttribute("totalSum", getTotalSum(orders));
 
         return "orders";
     }
 
-    @GetMapping("/order/{id}")
+    @GetMapping("/orders/{id}")
     public String getOrder(Model model,
                            @PathVariable("id") Long id) {
         CustomerOrder order = orderRepository.getReferenceById(id);
@@ -79,6 +81,12 @@ public class OrderController {
     private BigDecimal getTotalAmount(List<Product> productsInCart) {
         return productsInCart.stream()
                 .map(p -> p.getPrice().multiply(BigDecimal.valueOf(p.getCount())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private BigDecimal getTotalSum(List<CustomerOrder> orders) {
+        return orders.stream()
+                .map(CustomerOrder::getTotalSum)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
