@@ -14,9 +14,10 @@ public class Product {
     private String name;
     private String description;
     private Double price;
-    private byte[] image;
+    private String imgPath;
+    private String count;
     @ManyToMany(mappedBy = "addedProducts", fetch = FetchType.LAZY)
     private List<Cart> carts;
     @ManyToMany(mappedBy = "orderedProducts", fetch = FetchType.LAZY)
-    private List<Order> orders;
+    private List<CustomerOrder> orders;
 }
