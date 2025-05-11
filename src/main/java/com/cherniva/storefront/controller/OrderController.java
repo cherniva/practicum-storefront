@@ -6,6 +6,8 @@ import com.cherniva.storefront.model.Product;
 import com.cherniva.storefront.repository.OrderProductRepo;
 import com.cherniva.storefront.repository.CustomerOrderRepository;
 import com.cherniva.storefront.repository.ProductRepository;
+import com.cherniva.storefront.utils.OrderUtils;
+import com.cherniva.storefront.utils.ProductUtils;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,7 +32,7 @@ public class OrderController {
     @PostMapping("/buy")
     public String placeOrder(Model model) {
         List<Product> productsInCart = productRepository.getProductsByCountGreaterThanZero();
-        BigDecimal totalAmount = getTotalAmount(productsInCart);
+        BigDecimal totalAmount = ProductUtils.getTotalAmount(productsInCart);
 
         CustomerOrder order = new CustomerOrder();
         order.setTotalSum(totalAmount);
@@ -62,7 +64,7 @@ public class OrderController {
 
         model.addAttribute("orders", orders);
         model.addAttribute("numOrders", orders.size());
-        model.addAttribute("totalSum", getTotalSum(orders));
+        model.addAttribute("totalSum", OrderUtils.getTotalSum(orders));
 
         return "orders";
     }
@@ -76,18 +78,6 @@ public class OrderController {
         model.addAttribute("order", order);
 
         return "order";
-    }
-
-    private BigDecimal getTotalAmount(List<Product> productsInCart) {
-        return productsInCart.stream()
-                .map(p -> p.getPrice().multiply(BigDecimal.valueOf(p.getCount())))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
-
-    private BigDecimal getTotalSum(List<CustomerOrder> orders) {
-        return orders.stream()
-                .map(CustomerOrder::getTotalSum)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     private OrderProduct productToOrderProduct(Product product, CustomerOrder order) {
