@@ -3,6 +3,7 @@ package com.cherniva.storefront.model;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Entity
@@ -13,7 +14,8 @@ public class Product {
     private Long id;
     private String name;
     private String description;
-    private Double price;
+    @Column(precision = 10, scale = 2)
+    private BigDecimal price;
     private String imgPath;
     private Integer count;
     @ManyToMany(mappedBy = "addedProducts", fetch = FetchType.LAZY)
