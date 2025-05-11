@@ -6,10 +6,10 @@
 </head>
 
 <body>
-<a href="/cart/items" style="float:right;">
+<a href="/cart/products" style="float:right;">
     <b>КОРЗИНА &cudarrr;</b>
 </a>
-<a href="/main/items" style="float:right;">
+<a href="/main/products" style="float:right;">
     <b>ГЛАВНАЯ &cudarrr;</b>
 </a>
 <table style="width:70%;margin-left:auto;margin-right:auto;">
@@ -19,8 +19,8 @@
                 <a th:text="${'Заказ №'+order.id()}" th:href="${'/orders/'+order.id()}"></a>
             </h2>
             <table>
-                <tr th:each="item : ${order.items()}">
-                    <td th:text="${item.getTitle()+' ('+item.getCount()+' шт.) '+(item.getPrice()*item.getCount())+' руб.'}"></td>
+                <tr th:each="product : ${order.products()}">
+                    <td th:text="${product.getName()+' ('+product.getCount()+' шт.) '+(product.getPrice()*product.getCount())+' руб.'}"></td>
                 </tr>
             </table>
             <p>
