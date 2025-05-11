@@ -4,11 +4,12 @@ import com.cherniva.storefront.model.CustomerOrder;
 import com.cherniva.storefront.model.OrderProduct;
 import com.cherniva.storefront.model.Product;
 import com.cherniva.storefront.repository.OrderProductRepo;
-import com.cherniva.storefront.repository.OrderRepository;
+import com.cherniva.storefront.repository.CustomerOrderRepository;
 import com.cherniva.storefront.repository.ProductRepository;
-import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 
 import java.math.BigDecimal;
@@ -16,11 +17,11 @@ import java.util.List;
 
 @Controller
 public class OrderController {
-    private final OrderRepository orderRepository;
+    private final CustomerOrderRepository orderRepository;
     private final ProductRepository productRepository;
     private final OrderProductRepo orderProductRepo;
 
-    public OrderController(OrderRepository orderRepository, ProductRepository productRepository, OrderProductRepo orderProductRepo) {
+    public OrderController(CustomerOrderRepository orderRepository, ProductRepository productRepository, OrderProductRepo orderProductRepo) {
         this.orderRepository = orderRepository;
         this.productRepository = productRepository;
         this.orderProductRepo = orderProductRepo;
@@ -51,6 +52,26 @@ public class OrderController {
 
         model.addAttribute("newOrder", true);
         model.addAttribute("order", savedOrder);
+
+        return "order";
+    }
+
+    @GetMapping("/orders")
+    public String getOrders(Model model) {
+        List<CustomerOrder> orders = orderRepository.findAll();
+
+        model.addAttribute("orders", orders);
+
+        return "orders";
+    }
+
+    @GetMapping("/order/{id}")
+    public String getOrder(Model model,
+                           @PathVariable("id") Long id) {
+        CustomerOrder order = orderRepository.getReferenceById(id);
+
+        model.addAttribute("newOrder", false);
+        model.addAttribute("order", order);
 
         return "order";
     }
