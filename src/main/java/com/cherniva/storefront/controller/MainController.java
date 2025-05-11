@@ -6,7 +6,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.ArrayList;
@@ -15,13 +14,13 @@ import java.util.List;
 @Controller
 public class MainController {
 
-    private ProductService productService;
+    private final ProductService productService;
 
     public MainController(ProductService productService) {
         this.productService = productService;
     }
 
-    @GetMapping({"", "/", "/home"})
+    @GetMapping({"", "/", "/home", "/main", "/main/products"})
     public String getProducts(Model model,
                               @RequestParam(name = "pageNumber", defaultValue = "1") int pageNumber,
                               @RequestParam(name = "pageSize", defaultValue = "10") int pageSize,
