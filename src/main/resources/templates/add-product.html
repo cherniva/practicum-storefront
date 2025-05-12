@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+    <head>
+        <title>Добавить товар на витрину</title>
+        <style>
+            label {
+                display: inline-block;
+                width: 100px; /* Adjust width as needed */
+                vertical-align: top;
+            }
+
+            input, textarea {
+                width: 300px;
+            }
+
+            p {
+                margin-bottom: 10px;
+            }
+        </style>
+    </head>
+
+    <body>
+        <h2>Добавить новый товар</h2>
+        <form method="POST" th:action="@{/products/new}" enctype="multipart/form-data">
+            <p>
+                <label>Название: </label>
+                <input style="width:300px;" name="name">
+            </p>
+            <p>
+                <label>Описание: </label>
+                <textarea style="width:300px;" name="description"></textarea>
+            </p>
+            <p>
+                <label>Цена: </label>
+                <input style="width:300px;" name="price">
+            </p>
+            <p>
+                <label>Изображение: </label>
+                <input type="file" name="image" accept="image/*">
+            </p>
+            <p>
+                <button th:text="Добавить"></button>
+            </p>
+        </form>
+    </body>
+</html>
