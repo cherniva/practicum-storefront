@@ -2,9 +2,11 @@ package com.cherniva.storefront.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.ToString;
 
 @Entity
 @Data
+@ToString(exclude = "order")
 public class OrderProduct {
 
     @Id
