@@ -10,9 +10,14 @@ FROM eclipse-temurin:21-jre-jammy
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 
+# Create uploads directory
+RUN mkdir -p /app/uploads && \
+    chmod 777 /app/uploads
+
 # Set environment variables
 ENV JAVA_OPTS="-Xmx512m -Xms256m"
 ENV SPRING_PROFILES_ACTIVE="docker"
+ENV UPLOAD_DIR="/app/uploads"
 
 # Expose the application port
 EXPOSE 8080

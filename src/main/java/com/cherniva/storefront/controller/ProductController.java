@@ -76,31 +76,38 @@ public class ProductController {
             throw new RuntimeException(e);
         }
 
-        product.setImgPath(imagePath.toString());
+        // Store relative path for database
+        product.setImgPath("/uploads/" + imagePath.getFileName().toString());
 
-        productRepository.save(product);
+        productRepository.saveAndFlush(product);
 
         return "redirect:/main/products";
     }
 
     private Path saveImageFile(String name, MultipartFile imageFile) throws IOException {
-        // Validate content type (optional but recommended)
+        // Validate content type
         String contentType = imageFile.getContentType();
         if (!"image/png".equals(contentType) && !"image/jpeg".equals(contentType)) {
             throw new IllegalArgumentException("Only PNG or JPEG images are allowed.");
         }
 
-        // Define upload path
-        Path baseDir = Path.of("src/main/resources/static");
-        Path uploadDir = Path.of("uploads");
+        // Get upload directory from environment variable or use default
+        String uploadDir = System.getenv("UPLOAD_DIR");
+        if (uploadDir == null) {
+            uploadDir = "src/main/resources/static/uploads";
+        }
 
-        // Sanitize filename (e.g. replace spaces, restrict characters)
+        // Create directory if it doesn't exist
+        Path uploadPath = Path.of(uploadDir);
+        Files.createDirectories(uploadPath);
+
+        // Sanitize filename
         String extension = contentType.equals("image/png") ? ".png" : ".jpg";
         String filename = name + extension;
 
         // Save file
-        Path filePath = uploadDir.resolve(filename);
-        Files.copy(imageFile.getInputStream(), baseDir.resolve(filePath), StandardCopyOption.REPLACE_EXISTING);
+        Path filePath = uploadPath.resolve(filename);
+        Files.copy(imageFile.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
         return filePath;
     }
