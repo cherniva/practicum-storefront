@@ -1,20 +1,25 @@
 package com.cherniva.storefront.model;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Table;
+import org.springframework.data.relational.core.mapping.Column;
+
 import lombok.Data;
 
 import java.math.BigDecimal;
 
-@Entity
+@Table("product")
 @Data
 public class Product {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     private String name;
     private String description;
-    @Column(precision = 10, scale = 2)
     private BigDecimal price;
+
+    @Column("img_path")
     private String imgPath;
+
     private Integer count;
 }

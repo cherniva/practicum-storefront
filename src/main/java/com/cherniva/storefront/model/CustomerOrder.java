@@ -1,22 +1,27 @@
 package com.cherniva.storefront.model;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Table;
+import org.springframework.data.relational.core.mapping.Column;
+
 import lombok.Data;
 import lombok.ToString;
 
 import java.math.BigDecimal;
 import java.util.List;
 
-@Entity
+@Table("customer_order")
 @Data
 @ToString(exclude = "products")
 public class CustomerOrder {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column("total_sum")
     private BigDecimal totalSum;
 
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
-    private List<OrderProduct> products;
+    // Note: R2DBC doesn't support @OneToMany relationships directly
+    // You'll need to handle this relationship manually in your service layer
+    // This field is for convenience but won't be automatically populated
+    private transient List<OrderProduct> products;
 }

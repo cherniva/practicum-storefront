@@ -1,26 +1,29 @@
 package com.cherniva.storefront.model;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Table;
+import org.springframework.data.relational.core.mapping.Column;
+
 import lombok.Data;
 import lombok.ToString;
 
-@Entity
+@Table("order_product")
 @Data
 @ToString(exclude = "order")
 public class OrderProduct {
-
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "order_id")
-    private CustomerOrder order;
+    @Column("order_id")
+    private Long orderId;
 
-    @ManyToOne
-    @JoinColumn(name = "product_id")
-    private Product product;
+    @Column("product_id")
+    private Long productId;
 
     private Integer quantity;
+
+    // Transient fields for convenience - not mapped to database
+    private transient CustomerOrder order;
+    private transient Product product;
 }
 
