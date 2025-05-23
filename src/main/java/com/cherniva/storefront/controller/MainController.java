@@ -7,6 +7,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,36 +22,39 @@ public class MainController {
     }
 
     @GetMapping({"", "/", "/home", "/main", "/main/products"})
-    public String getProducts(Model model,
-                              @RequestParam(name = "pageNumber", defaultValue = "1") int pageNumber,
-                              @RequestParam(name = "pageSize", defaultValue = "10") int pageSize,
-                              @RequestParam(name = "search", required = false) String search,
-                              @RequestParam(name = "sort", required = false) String sort) {
+    public Mono<String> getProducts(Model model,
+                                    @RequestParam(name = "pageNumber", defaultValue = "1") int pageNumber,
+                                    @RequestParam(name = "pageSize", defaultValue = "10") int pageSize,
+                                    @RequestParam(name = "search", required = false) String search,
+                                    @RequestParam(name = "sort", required = false) String sort) {
         String field = "ALPHA".equals(sort) ? "name" : "PRICE".equals(sort) ? "price" : "id";
-        Page<Product> productsPage;
+
+        Mono<Page<Product>> productsPage;
         if (search != null)
             productsPage = productService.searchProductsByName(search, pageNumber-1, pageSize, field, "ASC");
         else
             productsPage = productService.getProductsSortedBy(pageNumber-1, pageSize, field, "ASC");
 
-        List<Product> products = productsPage.getContent();
+        return productsPage.doOnNext(page -> {
+                    List<Product> products = page.getContent();
 
-        int productsPerRow = 3;
-        List<List<Product>> productRows = new ArrayList<>();
+                    int productsPerRow = 3;
+                    List<List<Product>> productRows = new ArrayList<>();
 
-        for (int i = 0; i < products.size(); i += productsPerRow) {
-            List<Product> row = new ArrayList<>();
-            for (int j = 0; j < productsPerRow && (i + j) < products.size(); j++) {
-                row.add(products.get(i + j));
-            }
-            productRows.add(row);
-        }
+                    for (int i = 0; i < products.size(); i += productsPerRow) {
+                        List<Product> row = new ArrayList<>();
+                        for (int j = 0; j < productsPerRow && (i + j) < products.size(); j++) {
+                            row.add(products.get(i + j));
+                        }
+                        productRows.add(row);
+                    }
 
-        model.addAttribute("products", productRows);
-        model.addAttribute("paging", new Paging(pageNumber, pageSize, productsPage.getTotalPages()));
-        model.addAttribute("search", search);
-        model.addAttribute("sort", sort);
-        return "main";
+                    model.addAttribute("products", productRows);
+                    model.addAttribute("paging", new Paging(pageNumber, pageSize, page.getTotalPages()));
+                    model.addAttribute("search", search);
+                    model.addAttribute("sort", sort);
+                })
+                .map(page -> "main");
     }
 
     private record Paging(int pageNumber, int pageSize, long totalPages) {

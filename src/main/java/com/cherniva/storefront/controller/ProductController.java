@@ -1,13 +1,13 @@
 package com.cherniva.storefront.controller;
 
 import com.cherniva.storefront.model.Product;
-import com.cherniva.storefront.repository.ProductRepository;
-import jakarta.servlet.annotation.MultipartConfig;
+import com.cherniva.storefront.repository.ProductR2dbcRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -17,53 +17,51 @@ import java.nio.file.StandardCopyOption;
 
 @Controller
 public class ProductController {
-    private final ProductRepository productRepository;
+    private final ProductR2dbcRepository productRepository;
 
-    public ProductController(ProductRepository productRepository) {
+    public ProductController(ProductR2dbcRepository productRepository) {
         this.productRepository = productRepository;
     }
 
     @GetMapping("/products/{id}")
-    public String getProduct(Model model,
-                             @PathVariable("id") Long id) {
-        Product product = productRepository.getReferenceById(id);
-
-        model.addAttribute("product", product);
-
-        return "product";
+    public Mono<String> getProductReactive(Model model,
+                                           @PathVariable("id") Long id) {
+        return productRepository.findById(id)
+                .doOnNext(product -> model.addAttribute("product", product))
+                .map(product -> "product");
     }
 
     @PostMapping({"/products/{id}", "/main/products/{id}", "/cart/products/{id}"})
-    public String addToCart(Model model,
-                            @PathVariable("id") Long id,
-                            @RequestParam("action") String action,
-                            @RequestHeader(value = "referer", required = false) String referer) {
-        Product product = productRepository.getReferenceById(id);
+    public Mono<String> addToCartReactive(Model model,
+                                  @PathVariable("id") Long id,
+                                  @RequestParam("action") String action,
+                                  @RequestHeader(value = "referer", required = false) String referer) {
+        return productRepository.findById(id)
+                .flatMap(product -> {
+                    Integer count = switch (action) {
+                        case "plus" -> product.getCount() + 1;
+                        case "minus" -> Math.max(0, product.getCount() - 1);
+                        case "delete" -> 0;
+                        default -> throw new IllegalStateException("Unexpected value: " + action);
+                    };
 
-        Integer count = switch (action) {
-            case "plus" -> product.getCount() + 1;
-            case "minus" -> Math.max(0, product.getCount() - 1);
-            case "delete" -> 0;
-            default -> throw new IllegalStateException("Unexpected value: " + action);
-        };
+                    product.setCount(count);
 
-        product.setCount(count);
-
-        productRepository.save(product);
-
-        return "redirect:" + (referer != null ? referer : "/products/" + id);
+                    return productRepository.save(product);
+                })
+                .map(product -> "redirect:" + (referer != null ? referer : "/products/" + id));
     }
 
     @GetMapping("products/new")
-    public String getNewProductForm(Model model) {
-        return "add-product.html";
+    public Mono<String> getNewProductForm(Model model) {
+        return Mono.just("add-product");
     }
 
     @PostMapping(value = "products/new", consumes = "multipart/form-data")
     @Transactional
-    public String addNewProduct(Model model,
-                                @RequestParam String name, @RequestParam String description,
-                                @RequestParam BigDecimal price, @RequestParam("image") MultipartFile imageFile) {
+    public Mono<String> addNewProduct(Model model,
+                                      @RequestParam String name, @RequestParam String description,
+                                      @RequestParam BigDecimal price, @RequestParam("image") MultipartFile imageFile) {
         Product product = new Product();
         product.setName(name);
         product.setDescription(description);
@@ -79,9 +77,9 @@ public class ProductController {
         // Store relative path for database
         product.setImgPath("/uploads/" + imagePath.getFileName().toString());
 
-        productRepository.saveAndFlush(product);
+        productRepository.save(product);
 
-        return "redirect:/main/products";
+        return Mono.just("redirect:/main/products");
     }
 
     private Path saveImageFile(String name, MultipartFile imageFile) throws IOException {
