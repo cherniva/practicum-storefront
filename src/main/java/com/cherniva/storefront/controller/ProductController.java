@@ -14,6 +14,7 @@ import org.springframework.web.server.ServerWebExchange;
 import org.springframework.http.codec.multipart.Part;
 import org.springframework.core.io.buffer.DataBuffer;
 import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -23,6 +24,10 @@ import java.nio.file.StandardCopyOption;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.file.StandardOpenOption;
 import java.nio.ByteBuffer;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.IntStream;
 
 @Controller
 public class ProductController {
@@ -85,28 +90,81 @@ public class ProductController {
     @PostMapping(value = "products/new", consumes = "multipart/form-data")
     @Transactional
     public Mono<String> addNewProduct(ServerWebExchange exchange, Model model) {
+        logger.info("Starting new product creation process");
         return exchange.getMultipartData()
                 .flatMap(multipartData -> {
+                    logger.info("Received multipart data with parts: {}", multipartData.keySet());
                     Part imagePart = multipartData.getFirst("image");
                     if (imagePart == null) {
+                        logger.warn("No image file provided in the request");
                         model.addAttribute("error", "Please select an image file");
                         return Mono.just("add-product");
                     }
 
+                    logger.info("Image part received with content type: {}", imagePart.headers().getContentType());
                     return Mono.fromCallable(() -> {
+                        logger.info("Creating new product from form data");
                         Product product = new Product();
-                        product.setName(multipartData.getFirst("name").content().toString());
-                        product.setDescription(multipartData.getFirst("description").content().toString());
-                        product.setPrice(new BigDecimal(multipartData.getFirst("price").content().toString()));
-                        product.setCount(0);
+                        
+                        return Flux.zip(
+                            multipartData.getFirst("name").content().map(dataBuffer -> {
+                                byte[] bytes = new byte[dataBuffer.readableByteCount()];
+                                dataBuffer.read(bytes);
+                                String content = new String(bytes);
+                                logger.debug("Extracted name content: {}", content);
+                                return content;
+                            }),
+                            multipartData.getFirst("description").content().map(dataBuffer -> {
+                                byte[] bytes = new byte[dataBuffer.readableByteCount()];
+                                dataBuffer.read(bytes);
+                                String content = new String(bytes);
+                                logger.debug("Extracted description content: {}", content);
+                                return content;
+                            }),
+                            multipartData.getFirst("price").content().map(dataBuffer -> {
+                                byte[] bytes = new byte[dataBuffer.readableByteCount()];
+                                dataBuffer.read(bytes);
+                                String content = new String(bytes);
+                                logger.debug("Extracted price content: {}", content);
+                                return content;
+                            })
+                        ).next().flatMap(tuple -> {
+                            String name = tuple.getT1();
+                            String description = tuple.getT2();
+                            String price = tuple.getT3();
+                            
+                            logger.info("Product details - Name: {}, Description length: {}, Price: {}", 
+                                name, description.length(), price);
+                            
+                            product.setName(name);
+                            product.setDescription(description);
+                            product.setPrice(new BigDecimal(price));
+                            product.setCount(0);
 
-                        Path imagePath = saveImageFile(product.getName(), imagePart);
-                        product.setImgPath("/uploads/" + imagePath.getFileName().toString());
-                        return product;
+                            return Mono.fromCallable(() -> {
+                                Path imagePath = saveImageFile(product.getName(), imagePart);
+                                logger.info("Image saved successfully at path: {}", imagePath);
+                                product.setImgPath("uploads/" + imagePath.getFileName().toString());
+                                return product;
+                            });
+                        });
                     })
-                    .flatMap(product -> productRepository.save(product))
-                    .map(savedProduct -> "redirect:/main/products")
+                    .flatMap(mono -> mono)
+                    .flatMap(product -> {
+                        logger.info("Saving product to database: {}", product);
+                        return productRepository.save(product);
+                    })
+                    .publishOn(Schedulers.boundedElastic())
+                    .doOnSuccess(savedProduct -> {
+                        logger.info("Product saved successfully with ID: {}", savedProduct.getId());
+                    })
+                    .delayElement(Duration.ofMillis(500)) // Add a small delay to ensure file operations are completed
+                    .map(savedProduct -> {
+                        logger.info("Redirecting to main products page");
+                        return "redirect:/main/products";
+                    })
                     .onErrorResume(e -> {
+                        logger.error("Error creating product: ", e);
                         model.addAttribute("error", "Error creating product: " + e.getMessage());
                         return Mono.just("add-product");
                     });
@@ -114,9 +172,14 @@ public class ProductController {
     }
 
     private Path saveImageFile(String name, Part imagePart) throws IOException {
+        logger.info("Starting image file save process for product: {}", name);
+        
         // Validate content type
         String contentType = imagePart.headers().getContentType().toString();
+        logger.info("Image content type: {}", contentType);
+        
         if (!"image/png".equals(contentType) && !"image/jpeg".equals(contentType)) {
+            logger.error("Invalid content type: {}", contentType);
             throw new IllegalArgumentException("Only PNG or JPEG images are allowed.");
         }
 
@@ -124,27 +187,69 @@ public class ProductController {
         String uploadDir = System.getenv("UPLOAD_DIR");
         if (uploadDir == null) {
             uploadDir = "src/main/resources/static/uploads";
+            logger.info("Using default upload directory: {}", uploadDir);
+        } else {
+            logger.info("Using custom upload directory from environment: {}", uploadDir);
         }
 
         // Create directory if it doesn't exist
         Path uploadPath = Path.of(uploadDir);
         Files.createDirectories(uploadPath);
+        logger.info("Ensured upload directory exists at: {}", uploadPath);
 
         // Sanitize filename
         String extension = contentType.equals("image/png") ? ".png" : ".jpg";
         String filename = name + extension;
+        logger.info("Generated filename: {}", filename);
 
         // Save file
         Path filePath = uploadPath.resolve(filename);
-        AsynchronousFileChannel channel = AsynchronousFileChannel.open(filePath, 
-            StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+        logger.info("Full file path for saving: {}", filePath);
         
-        Flux<DataBuffer> content = imagePart.content();
-        content.subscribe(dataBuffer -> {
-            ByteBuffer byteBuffer = dataBuffer.asByteBuffer();
-            channel.write(byteBuffer, 0);
-        });
-
-        return filePath;
+        // Create a temporary file first
+        Path tempFile = Files.createTempFile("upload_", extension);
+        logger.info("Created temporary file: {}", tempFile);
+        
+        try {
+            // Write the content to the temporary file
+            List<byte[]> byteArrays = imagePart.content()
+                .map(dataBuffer -> {
+                    byte[] bytes = new byte[dataBuffer.readableByteCount()];
+                    dataBuffer.read(bytes);
+                    return bytes;
+                })
+                .collectList()
+                .block();
+            
+            // Calculate total size
+            int totalSize = byteArrays.stream()
+                .mapToInt(bytes -> bytes.length)
+                .sum();
+            
+            // Combine all byte arrays
+            byte[] allBytes = new byte[totalSize];
+            int currentPos = 0;
+            for (byte[] bytes : byteArrays) {
+                System.arraycopy(bytes, 0, allBytes, currentPos, bytes.length);
+                currentPos += bytes.length;
+            }
+            
+            Files.write(tempFile, allBytes);
+            
+            // Move the temporary file to the final location
+            Files.move(tempFile, filePath, StandardCopyOption.REPLACE_EXISTING);
+            logger.info("Successfully moved file from {} to {}", tempFile, filePath);
+            
+            return filePath;
+        } catch (Exception e) {
+            logger.error("Error saving image file: ", e);
+            // Clean up temporary file if it exists
+            try {
+                Files.deleteIfExists(tempFile);
+            } catch (IOException ex) {
+                logger.warn("Failed to delete temporary file: {}", tempFile, ex);
+            }
+            throw e;
+        }
     }
 }
