@@ -26,11 +26,12 @@
         <p>
             <span th:text="${product.getDescription()}"></span>
         </p>
-        <form th:action="${'/products/'+product.getId()}" method="post">
-            <button name="action" value="minus">-</button>
+        <form th:action="@{/products/{id}(id=${product.getId()})}" method="post">
+            <input type="hidden" name="action" value="plus" />
+            <button type="submit" name="action" value="minus">-</button>
             <span th:text="${product.getCount()}"></span>
-            <button name="action" value="plus">+</button>
-            <button name="action" value="plus" th:if="${product.getCount()==0}" style="float:right;">В корзину</button>
+            <button type="submit" name="action" value="plus">+</button>
+            <button type="submit" name="action" value="plus" th:if="${product.getCount()==0}" style="float:right;">В корзину</button>
         </form>
     </div>
 </body>

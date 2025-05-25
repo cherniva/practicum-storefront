@@ -32,11 +32,12 @@
                 <tr><td th:text="${product.getDescription()}"></td></tr>
                 <tr>
                     <td>
-                        <form th:action="${'/cart/products/'+product.getId()}" method="post">
-                            <button name="action" value="minus">-</button>
+                        <form th:action="@{/cart/products/{id}(id=${product.getId()})}" method="post">
+                            <input type="hidden" name="action" value="plus" />
+                            <button type="submit" name="action" value="minus">-</button>
                             <span th:text="${product.getCount()}"></span>
-                            <button name="action" value="plus">+</button>
-                            <button name="action" value="delete" style="float:right;">&cross;</button>
+                            <button type="submit" name="action" value="plus">+</button>
+                            <button type="submit" name="action" value="delete" style="float:right;">&cross;</button>
                         </form>
                     </td>
                 </tr>
