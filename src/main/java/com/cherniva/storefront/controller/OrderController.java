@@ -8,6 +8,7 @@ import com.cherniva.storefront.repository.CustomerOrderR2dbcRepository;
 import com.cherniva.storefront.repository.ProductR2dbcRepository;
 import com.cherniva.storefront.utils.OrderUtils;
 import com.cherniva.storefront.utils.ProductUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,6 +21,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 @Controller
+@Slf4j
 public class OrderController {
     private final CustomerOrderR2dbcRepository orderRepository;
     private final ProductR2dbcRepository productRepository;

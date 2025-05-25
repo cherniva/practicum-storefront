@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Error</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+    <div class="container">
+        <h1>Oops! Something went wrong</h1>
+        <p>We encountered an error while processing your request.</p>
+        <div class="error-details" th:if="${error != null}">
+            <p th:text="${error}"></p>
+        </div>
+        <a th:href="@{/}" class="btn">Return to Home</a>
+    </div>
+</body>
+</html> 

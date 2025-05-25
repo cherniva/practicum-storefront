@@ -1,6 +1,7 @@
 package com.cherniva.storefront.model;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.relational.core.mapping.Table;
 import org.springframework.data.relational.core.mapping.Column;
 
@@ -23,7 +24,9 @@ public class OrderProduct {
     private Integer quantity;
 
     // Transient fields for convenience - not mapped to database
-    private transient CustomerOrder order;
-    private transient Product product;
+    @Transient
+    private CustomerOrder order;
+    @Transient
+    private Product product;
 }
 
