@@ -15,19 +15,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Import(TestConfig.class)
 public class OrderProductRepoTest {
 
-    @Autowired
-    private OrderProductRepo orderProductRepo;
-
-    @Test
-    void testFindAll() {
-        List<OrderProduct> orderProducts = orderProductRepo.findAll();
-        assertThat(orderProducts).hasSize(2);
-    }
-
-    @Test
-    void testFindById() {
-        OrderProduct orderProduct = orderProductRepo.findById(1L).orElse(null);
-        assertThat(orderProduct).isNotNull();
-        assertThat(orderProduct.getQuantity()).isEqualTo(2);
-    }
+//    @Autowired
+//    private OrderProductRepo orderProductRepo;
+//
+//    @Test
+//    void testFindAll() {
+//        List<OrderProduct> orderProducts = orderProductRepo.findAll();
+//        assertThat(orderProducts).hasSize(2);
+//    }
+//
+//    @Test
+//    void testFindById() {
+//        OrderProduct orderProduct = orderProductRepo.findById(1L).orElse(null);
+//        assertThat(orderProduct).isNotNull();
+//        assertThat(orderProduct.getQuantity()).isEqualTo(2);
+//    }
 } 

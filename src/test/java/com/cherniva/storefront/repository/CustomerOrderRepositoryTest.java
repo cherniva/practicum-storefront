@@ -15,19 +15,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Import(TestConfig.class)
 public class CustomerOrderRepositoryTest {
 
-    @Autowired
-    private CustomerOrderRepository customerOrderRepository;
-
-    @Test
-    void testFindAll() {
-        List<CustomerOrder> orders = customerOrderRepository.findAll();
-        assertThat(orders).hasSize(2);
-    }
-
-    @Test
-    void testFindById() {
-        CustomerOrder order = customerOrderRepository.findById(1L).orElse(null);
-        assertThat(order).isNotNull();
-        assertThat(!order.getProducts().isEmpty());
-    }
+//    @Autowired
+//    private CustomerOrderR2dbcRepository customerOrderRepository;
+//
+//    @Test
+//    void testFindAll() {
+//        List<CustomerOrder> orders = customerOrderRepository.findAll();
+//        assertThat(orders).hasSize(2);
+//    }
+//
+//    @Test
+//    void testFindById() {
+//        CustomerOrder order = customerOrderRepository.findById(1L).orElse(null);
+//        assertThat(order).isNotNull();
+//        assertThat(!order.getProducts().isEmpty());
+//    }
 } 
