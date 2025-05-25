@@ -74,7 +74,22 @@ public class OrderController {
                                             .doOnSuccess(order -> log.info("Updated order {} with products", order.getId()));
                                     });
                             })
-                            .then(Mono.just(savedOrder));
+                            .then(Mono.just(savedOrder))
+                            .flatMap(order -> 
+                                // Reset product counts and save
+                                Flux.fromIterable(products)
+                                    .map(product -> {
+                                        log.info("Resetting count for product {} from {} to 0", 
+                                            product.getId(), product.getCount());
+                                        product.setCount(0);
+                                        return product;
+                                    })
+                                    .flatMap(productRepository::save)
+                                    .collectList()
+                                    .doOnNext(savedProducts -> 
+                                        log.info("Reset and saved {} products", savedProducts.size()))
+                                    .thenReturn(order)
+                            );
                 })
                 .flatMap(savedOrder -> {
                     model.addAttribute("newOrder", true);
