@@ -1,22 +1,27 @@
 package com.cherniva.storefront.config;
 
+import io.r2dbc.spi.ConnectionFactory;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
-import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.r2dbc.connection.R2dbcTransactionManager;
+import org.springframework.r2dbc.connection.init.CompositeDatabasePopulator;
+import org.springframework.r2dbc.connection.init.ConnectionFactoryInitializer;
+import org.springframework.r2dbc.connection.init.ResourceDatabasePopulator;
+import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.test.context.ActiveProfiles;
-
-import javax.sql.DataSource;
+import org.springframework.transaction.ReactiveTransactionManager;
 
 @TestConfiguration
 @ActiveProfiles("test")
 public class TestConfig {
+    @Bean
+    public DatabaseClient databaseClient(ConnectionFactory connectionFactory) {
+        return DatabaseClient.create(connectionFactory);
+    }
 
     @Bean
-    public DataSource dataSource() {
-        return new EmbeddedDatabaseBuilder()
-                .setType(EmbeddedDatabaseType.H2)
-                .addScript("classpath:data.sql")
-                .build();
+    public ReactiveTransactionManager transactionManager(ConnectionFactory connectionFactory) {
+        return new R2dbcTransactionManager(connectionFactory);
     }
 } 
