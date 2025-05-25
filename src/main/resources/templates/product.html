@@ -27,7 +27,6 @@
             <span th:text="${product.getDescription()}"></span>
         </p>
         <form th:action="@{/products/{id}(id=${product.getId()})}" method="post">
-            <input type="hidden" name="action" value="plus" />
             <button type="submit" name="action" value="minus">-</button>
             <span th:text="${product.getCount()}"></span>
             <button type="submit" name="action" value="plus">+</button>
