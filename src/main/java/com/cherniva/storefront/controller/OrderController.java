@@ -53,33 +53,38 @@ public class OrderController {
                 .flatMap(tuple -> {
                     List<Product> products = tuple.getT1();
                     CustomerOrder savedOrder = tuple.getT2();
+                    log.info("Processing order {} with {} products", savedOrder.getId(), products.size());
 
-                    // Save order products and reset counts in parallel
-                    Mono<List<OrderProduct>> orderProductsMono = Flux.fromIterable(products)
-                            .map(p -> productToOrderProduct(p, savedOrder))
-                            .collectList()
-                            .flatMap(orderProducts -> orderProductRepo.saveAll(orderProducts).collectList());
-
-                    Mono<Void> resetCountsMono = Flux.fromIterable(products)
-                            .map(product -> {
-                                product.setCount(0);
-                                return product;
+                    // Create and save order products
+                    return Flux.fromIterable(products)
+                            .map(p -> {
+                                OrderProduct op = productToOrderProduct(p, savedOrder);
+                                log.info("Creating order product for product {} with quantity {}", p.getId(), op.getQuantity());
+                                return op;
                             })
-                            .flatMap(productRepository::save)
-                            .then();
-
-                    return Mono.zip(orderProductsMono, resetCountsMono)
-                            .map(result -> {
-                                savedOrder.setProducts(result.getT1());
-                                return savedOrder;
-                            });
+                            .collectList()
+                            .flatMap(orderProducts -> {
+                                log.info("Saving {} order products", orderProducts.size());
+                                return orderProductRepo.saveAll(orderProducts)
+                                    .collectList()
+                                    .flatMap(savedOrderProducts -> {
+                                        log.info("Successfully saved {} order products", savedOrderProducts.size());
+                                        savedOrder.setProducts(savedOrderProducts);
+                                        return orderRepository.save(savedOrder)
+                                            .doOnSuccess(order -> log.info("Updated order {} with products", order.getId()));
+                                    });
+                            })
+                            .then(Mono.just(savedOrder));
                 })
-                .doOnNext(savedOrder -> {
+                .flatMap(savedOrder -> {
                     model.addAttribute("newOrder", true);
                     model.addAttribute("order", savedOrder);
+                    return Mono.just("buy");
                 })
-                .map(savedOrder -> "order")
-                .onErrorReturn("error");
+                .onErrorResume(e -> {
+                    log.error("Error processing order: ", e);
+                    return Mono.just("error");
+                });
     }
 
     @GetMapping("/orders")
@@ -97,12 +102,36 @@ public class OrderController {
     @GetMapping("/orders/{id}")
     public Mono<String> getOrder(Model model,
                                  @PathVariable("id") Long id) {
+        log.info("Fetching order with id: {}", id);
         return orderRepository.findById(id)
+                .doOnNext(order -> log.info("Found order: id={}, totalSum={}", order.getId(), order.getTotalSum()))
+                .flatMap(order -> 
+                    orderProductRepo.findByOrderId(order.getId())
+                        .doOnNext(op -> log.info("Found order product: id={}, productId={}, quantity={}", 
+                            op.getId(), op.getProductId(), op.getQuantity()))
+                        .flatMap(orderProduct -> 
+                            productRepository.findById(orderProduct.getProductId())
+                                .doOnNext(product -> {
+                                    log.info("Found product: id={}, name={}", product.getId(), product.getName());
+                                    orderProduct.setProduct(product);
+                                })
+                                .thenReturn(orderProduct)
+                        )
+                        .collectList()
+                        .doOnNext(products -> log.info("Collected {} order products for order {}", products.size(), order.getId()))
+                        .map(orderProducts -> {
+                            order.setProducts(orderProducts);
+                            log.info("Set {} products to order {}", orderProducts.size(), order.getId());
+                            return order;
+                        })
+                )
                 .doOnNext(order -> {
+                    log.info("Adding order to model: id={}, productsCount={}", 
+                        order.getId(), order.getProducts() != null ? order.getProducts().size() : 0);
                     model.addAttribute("newOrder", false);
                     model.addAttribute("order", order);
                 })
-                .map(order -> "order");
+                .map(order -> "buy");
     }
 
     private OrderProduct productToOrderProduct(Product product, CustomerOrder order) {
@@ -110,6 +139,10 @@ public class OrderController {
         orderProduct.setProduct(product);
         orderProduct.setOrder(order);
         orderProduct.setQuantity(product.getCount());
+        orderProduct.setOrderId(order.getId());
+        orderProduct.setProductId(product.getId());
+        log.info("Created OrderProduct: productId={}, orderId={}, quantity={}", 
+            product.getId(), order.getId(), product.getCount());
         return orderProduct;
     }
 }
