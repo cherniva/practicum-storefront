@@ -141,12 +141,12 @@ public class ProductController {
                             product.setPrice(new BigDecimal(price));
                             product.setCount(0);
 
-                            return Mono.fromCallable(() -> {
-                                Path imagePath = saveImageFile(product.getName(), imagePart);
-                                logger.info("Image saved successfully at path: {}", imagePath);
-                                product.setImgPath("uploads/" + imagePath.getFileName().toString());
-                                return product;
-                            });
+                            return saveImageFile(product.getName(), imagePart)
+                                .map(imagePath -> {
+                                    logger.info("Image saved successfully at path: {}", imagePath);
+                                    product.setImgPath("uploads/" + imagePath.getFileName().toString());
+                                    return product;
+                                });
                         });
                     })
                     .flatMap(mono -> mono)
@@ -171,7 +171,7 @@ public class ProductController {
                 });
     }
 
-    private Path saveImageFile(String name, Part imagePart) throws IOException {
+    private Mono<Path> saveImageFile(String name, Part imagePart) {
         logger.info("Starting image file save process for product: {}", name);
         
         // Validate content type
@@ -180,7 +180,7 @@ public class ProductController {
         
         if (!"image/png".equals(contentType) && !"image/jpeg".equals(contentType)) {
             logger.error("Invalid content type: {}", contentType);
-            throw new IllegalArgumentException("Only PNG or JPEG images are allowed.");
+            return Mono.error(new IllegalArgumentException("Only PNG or JPEG images are allowed."));
         }
 
         // Get upload directory from environment variable or use default
@@ -194,8 +194,12 @@ public class ProductController {
 
         // Create directory if it doesn't exist
         Path uploadPath = Path.of(uploadDir);
-        Files.createDirectories(uploadPath);
-        logger.info("Ensured upload directory exists at: {}", uploadPath);
+        try {
+            Files.createDirectories(uploadPath);
+            logger.info("Ensured upload directory exists at: {}", uploadPath);
+        } catch (IOException e) {
+            return Mono.error(e);
+        }
 
         // Sanitize filename
         String extension = contentType.equals("image/png") ? ".png" : ".jpg";
@@ -206,50 +210,47 @@ public class ProductController {
         Path filePath = uploadPath.resolve(filename);
         logger.info("Full file path for saving: {}", filePath);
         
-        // Create a temporary file first
-        Path tempFile = Files.createTempFile("upload_", extension);
-        logger.info("Created temporary file: {}", tempFile);
-        
-        try {
-            // Write the content to the temporary file
-            List<byte[]> byteArrays = imagePart.content()
-                .map(dataBuffer -> {
-                    byte[] bytes = new byte[dataBuffer.readableByteCount()];
-                    dataBuffer.read(bytes);
-                    return bytes;
-                })
-                .collectList()
-                .block();
-            
-            // Calculate total size
-            int totalSize = byteArrays.stream()
-                .mapToInt(bytes -> bytes.length)
-                .sum();
-            
-            // Combine all byte arrays
-            byte[] allBytes = new byte[totalSize];
-            int currentPos = 0;
-            for (byte[] bytes : byteArrays) {
-                System.arraycopy(bytes, 0, allBytes, currentPos, bytes.length);
-                currentPos += bytes.length;
-            }
-            
-            Files.write(tempFile, allBytes);
-            
-            // Move the temporary file to the final location
-            Files.move(tempFile, filePath, StandardCopyOption.REPLACE_EXISTING);
-            logger.info("Successfully moved file from {} to {}", tempFile, filePath);
-            
-            return filePath;
-        } catch (Exception e) {
-            logger.error("Error saving image file: ", e);
-            // Clean up temporary file if it exists
-            try {
-                Files.deleteIfExists(tempFile);
-            } catch (IOException ex) {
-                logger.warn("Failed to delete temporary file: {}", tempFile, ex);
-            }
-            throw e;
-        }
+        return Mono.fromCallable(() -> Files.createTempFile("upload_", extension))
+            .flatMap(tempFile -> {
+                logger.info("Created temporary file: {}", tempFile);
+                return imagePart.content()
+                    .reduce(new ArrayList<byte[]>(), (list, dataBuffer) -> {
+                        byte[] bytes = new byte[dataBuffer.readableByteCount()];
+                        dataBuffer.read(bytes);
+                        list.add(bytes);
+                        return list;
+                    })
+                    .flatMap(byteArrays -> {
+                        // Calculate total size
+                        int totalSize = byteArrays.stream()
+                            .mapToInt(bytes -> bytes.length)
+                            .sum();
+                        
+                        // Combine all byte arrays
+                        byte[] allBytes = new byte[totalSize];
+                        int currentPos = 0;
+                        for (byte[] bytes : byteArrays) {
+                            System.arraycopy(bytes, 0, allBytes, currentPos, bytes.length);
+                            currentPos += bytes.length;
+                        }
+                        
+                        return Mono.fromCallable(() -> {
+                            Files.write(tempFile, allBytes);
+                            Files.move(tempFile, filePath, StandardCopyOption.REPLACE_EXISTING);
+                            logger.info("Successfully moved file from {} to {}", tempFile, filePath);
+                            return filePath;
+                        }).doFinally(signalType -> {
+                            try {
+                                Files.deleteIfExists(tempFile);
+                            } catch (IOException ex) {
+                                logger.warn("Failed to delete temporary file: {}", tempFile, ex);
+                            }
+                        });
+                    });
+            })
+            .onErrorResume(e -> {
+                logger.error("Error saving image file: ", e);
+                return Mono.error(e);
+            });
     }
 }
