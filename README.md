@@ -1,26 +1,26 @@
 # Storefront Web Application
 
-A web storefront application built with Spring Boot (3.4.5), running on embedded Tomcat. Written in Java 21, and built with Maven. Uses a MySQL database for production and H2 for testing.
+A web storefront application built with Spring Boot (3.4.5), using a reactive stack with Spring WebFlux and R2DBC. Written in Java 21, and built with Maven. Uses a MySQL database for production and H2 for testing.
 
 ## 🚀 Technologies
 
 - **Java 21**
 - **Spring Boot 3.4.5**
-- **Spring Web MVC**
-- **Spring Data JPA**
+- **Spring WebFlux** - Reactive web framework
+- **Spring Data R2DBC** - Reactive database access
 - **MySQL** - Production database
 - **H2 Database** - In-memory database for testing and docker
 - **Thymeleaf**
 - **JUnit 5**
 - **Lombok**
 - **Maven**
+- **Project Reactor** - Reactive streams implementation
 
 ## 📋 Prerequisites
 
 - Java 21 or later
 - MySQL 8.0 or later
 - Maven 3.6 or later
-- Docker and Docker Compose (for containerized deployment)
 
 ## 🛠️ Setup
 
@@ -39,20 +39,6 @@ A web storefront application built with Spring Boot (3.4.5), running on embedded
    Or use the generated JAR:
    ```bash
    java -jar target/storefront-0.0.1-SNAPSHOT.jar
-   ```
-
-### Running with Docker
-
-1. Build and start the containers:
-   ```bash
-   docker-compose up --build
-   ```
-
-2. To stop the containers:
-   ```bash
-   docker-compose down
-   ```
-   or Ctrl+c in console to stop the app
 
 ## 🧪 Testing
 
@@ -66,6 +52,7 @@ The test environment uses:
 - H2 in-memory database
 - Test-specific configuration in `src/test/resources/application-test.properties`
 - Spring Boot's test support
+- Reactor Test for testing reactive streams
 
 ## 📦 Project Structure
 
@@ -81,7 +68,4 @@ src/
 
 The application uses Spring Boot's configuration system. Key configuration files:
 - `src/main/resources/application.properties` - Main configuration
-- `src/test/resources/application-docker.properties` - Docker configuration
 - `src/test/resources/application-test.properties` - Test configuration
-- `docker-compose.yml` - Docker compose configuration
-- `Dockerfile` - Container build instructions 
