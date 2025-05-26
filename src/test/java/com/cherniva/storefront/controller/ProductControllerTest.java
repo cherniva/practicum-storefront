@@ -9,8 +9,15 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
+import org.springframework.http.client.MultipartBodyBuilder;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -90,15 +97,39 @@ public class ProductControllerTest {
         savedProduct.setName("New Product");
         savedProduct.setDescription("New Description");
         savedProduct.setPrice(new BigDecimal("149.99"));
+        savedProduct.setImgPath("uploads/test-image.png");
 
         when(productRepository.save(any(Product.class))).thenReturn(Mono.just(savedProduct));
+
+        MultipartBodyBuilder builder = new MultipartBodyBuilder();
+        builder.part("name", "New Product");
+        builder.part("description", "New Description");
+        builder.part("price", "149.99");
+        
+        ByteArrayResource imageResource = new ByteArrayResource(new byte[]{1, 2, 3, 4}) {
+            @Override
+            public String getFilename() {
+                return "test-image.png";
+            }
+        };
+        builder.part("image", imageResource, MediaType.IMAGE_PNG);
 
         webTestClient.post()
                 .uri("/products/new")
                 .contentType(MediaType.MULTIPART_FORM_DATA)
-                .bodyValue("name=New Product&description=New Description&price=149.99")
+                .bodyValue(builder.build())
                 .exchange()
                 .expectStatus().is3xxRedirection()
                 .expectHeader().valueEquals("Location", "/main/products");
+
+        // Clean up: Delete the test image file
+        try {
+            Path uploadDir = Paths.get("src/main/resources/static/uploads");
+            Path imagePath = uploadDir.resolve("New Product.png");
+            Files.deleteIfExists(imagePath);
+        } catch (Exception e) {
+            // Log error but don't fail the test
+            System.err.println("Failed to delete test image: " + e.getMessage());
+        }
     }
 } 
