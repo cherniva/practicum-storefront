@@ -13,6 +13,10 @@
 	<name>storefront</name>
 	<packaging>jar</packaging>
 
+	<properties>
+		<openapi-generator.version>7.2.0</openapi-generator.version>
+	</properties>
+
 	<dependencies>
 		<dependency>
 			<groupId>io.asyncer</groupId>
@@ -60,6 +64,27 @@
 			<artifactId>reactor-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+
+		<dependency>
+			<groupId>com.cherniva</groupId>
+			<artifactId>payment</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.openapitools</groupId>
+			<artifactId>jackson-databind-nullable</artifactId>
+			<version>0.2.6</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webflux-ui</artifactId>
+			<version>2.3.0</version>
+		</dependency>
+		<dependency>
+			<groupId>io.swagger.core.v3</groupId>
+			<artifactId>swagger-annotations</artifactId>
+			<version>2.2.20</version>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -75,6 +100,29 @@
 						</path>
 					</annotationProcessorPaths>
 				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.openapitools</groupId>
+				<artifactId>openapi-generator-maven-plugin</artifactId>
+				<version>${openapi-generator.version}</version>
+				<executions>
+					<execution>
+						<id>generate-client</id>
+						<goals>
+							<goal>generate</goal>
+						</goals>
+						<configuration>
+							<inputSpec>${project.basedir}/../payment/src/main/resources/api/payment-api.yaml</inputSpec>
+							<generatorName>java</generatorName>
+							<apiPackage>com.cherniva.storefront.client.api</apiPackage>
+							<modelPackage>com.cherniva.storefront.client.model</modelPackage>
+							<configOptions>
+								<library>webclient</library>
+								<useSpringBoot3>true</useSpringBoot3>
+							</configOptions>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
