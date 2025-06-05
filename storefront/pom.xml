@@ -85,6 +85,11 @@
 			<artifactId>swagger-annotations</artifactId>
 			<version>2.2.20</version>
 		</dependency>
+		<dependency>
+			<groupId>jakarta.annotation</groupId>
+			<artifactId>jakarta.annotation-api</artifactId>
+			<version>2.1.1</version>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -119,6 +124,7 @@
 							<configOptions>
 								<library>webclient</library>
 								<useSpringBoot3>true</useSpringBoot3>
+								<useJakartaEe>true</useJakartaEe>
 							</configOptions>
 						</configuration>
 					</execution>
