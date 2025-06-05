@@ -17,6 +17,9 @@
     <description>Payment module for storefront</description>
 
     <dependencies>
-        <!-- add any future dependencies for payment here -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
+        </dependency>
     </dependencies>
 </project>
