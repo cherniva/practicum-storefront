@@ -1,0 +1,80 @@
+openapi: 3.0.3
+info:
+  title: Payment Service API
+  description: API for handling payment operations
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080/api
+    description: Payment service server
+
+paths:
+  /balance:
+    get:
+      operationId: getBalance
+      summary: Get current balance
+      tags:
+        - payment
+      responses:
+        '200':
+          description: Current balance retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: number
+                format: double
+                example: 10000.00
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /payment:
+    post:
+      operationId: processPayment
+      summary: Process a payment
+      tags:
+        - payment
+      parameters:
+        - name: amount
+          in: query
+          required: true
+          schema:
+            type: number
+            format: double
+            minimum: 0.01
+            example: 100.00
+      responses:
+        '200':
+          description: Payment processed successfully
+          content:
+            application/json:
+              schema:
+                type: number
+                format: double
+                example: 9900.00
+        '400':
+          description: Invalid payment amount or insufficient balance
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Error message
+      required:
+        - message 
