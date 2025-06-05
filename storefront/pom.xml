@@ -104,6 +104,9 @@
 							<artifactId>lombok</artifactId>
 						</path>
 					</annotationProcessorPaths>
+					<excludes>
+						<exclude>**/test/**</exclude>
+					</excludes>
 				</configuration>
 			</plugin>
 			<plugin>
@@ -121,10 +124,22 @@
 							<generatorName>java</generatorName>
 							<apiPackage>com.cherniva.storefront.client.api</apiPackage>
 							<modelPackage>com.cherniva.storefront.client.model</modelPackage>
+							<skipValidateSpec>true</skipValidateSpec>
+							<generateApiTests>false</generateApiTests>
+							<generateModelTests>false</generateModelTests>
 							<configOptions>
 								<library>webclient</library>
 								<useSpringBoot3>true</useSpringBoot3>
 								<useJakartaEe>true</useJakartaEe>
+								<modelTests>false</modelTests>
+								<apiTests>false</apiTests>
+								<generateTests>false</generateTests>
+								<generateModelTests>false</generateModelTests>
+								<generateApiTests>false</generateApiTests>
+								<sourceFolder>src/main/java</sourceFolder>
+								<excludeTests>true</excludeTests>
+								<excludeTestFiles>true</excludeTestFiles>
+								<generateSourceCodeOnly>true</generateSourceCodeOnly>
 							</configOptions>
 						</configuration>
 					</execution>
