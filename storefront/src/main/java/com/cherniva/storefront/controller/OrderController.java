@@ -6,6 +6,7 @@ import com.cherniva.storefront.model.Product;
 import com.cherniva.storefront.repository.OrderProductR2dbcRepository;
 import com.cherniva.storefront.repository.CustomerOrderR2dbcRepository;
 import com.cherniva.storefront.repository.ProductR2dbcRepository;
+import com.cherniva.storefront.service.PaymentService;
 import com.cherniva.storefront.utils.OrderUtils;
 import com.cherniva.storefront.utils.ProductUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -26,11 +27,13 @@ public class OrderController {
     private final CustomerOrderR2dbcRepository orderRepository;
     private final ProductR2dbcRepository productRepository;
     private final OrderProductR2dbcRepository orderProductRepo;
+    private final PaymentService paymentService;
 
-    public OrderController(CustomerOrderR2dbcRepository orderRepository, ProductR2dbcRepository productRepository, OrderProductR2dbcRepository orderProductRepo) {
+    public OrderController(CustomerOrderR2dbcRepository orderRepository, ProductR2dbcRepository productRepository, OrderProductR2dbcRepository orderProductRepo, PaymentService paymentService) {
         this.orderRepository = orderRepository;
         this.productRepository = productRepository;
         this.orderProductRepo = orderProductRepo;
+        this.paymentService = paymentService;
     }
 
     @PostMapping("/buy")
@@ -75,6 +78,12 @@ public class OrderController {
                                     });
                             })
                             .then(Mono.just(savedOrder))
+                            .flatMap(order -> 
+                                // Process payment first
+                                paymentService.processPayment(order.getTotalSum().doubleValue())
+                                    .doOnNext(balance -> log.info("Payment processed successfully. New balance: {}", balance))
+                                    .thenReturn(order)
+                            )
                             .flatMap(order -> 
                                 // Reset product counts and save
                                 Flux.fromIterable(products)
