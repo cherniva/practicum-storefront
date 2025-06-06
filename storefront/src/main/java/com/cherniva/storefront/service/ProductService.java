@@ -1,0 +1,125 @@
+package com.cherniva.storefront.service;
+
+import com.cherniva.storefront.model.Product;
+import com.cherniva.storefront.repository.ProductR2dbcRepository;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.*;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
+
+import java.math.BigDecimal;
+import java.util.concurrent.TimeUnit;
+import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
+
+@Service
+public class ProductService {
+
+    private final ProductR2dbcRepository productRepository;
+    private final RedisTemplate<String, Object> redisTemplate;
+    private final int ttl;
+
+    public ProductService(ProductR2dbcRepository productRepository, RedisTemplate<String, Object> redisTemplate,
+                          @Value("${redis.template.ttl:1}") int ttl) {
+        this.productRepository = productRepository;
+        this.redisTemplate = redisTemplate;
+        this.ttl = ttl;
+    }
+
+    /**
+     * Get paginated products with dynamic sorting based on field name
+     */
+    public Mono<Page<Product>> getProductsSortedBy(int page, int size, String field, String direction) {
+        String cacheKey = String.format("products:sorted:%d:%d:%s:%s", 
+            page, size, field, direction);
+
+        // Try to get from cache first
+        Object cachedData = redisTemplate.opsForValue().get(cacheKey);
+        if (cachedData != null) {
+            if (cachedData instanceof Page) {
+                return Mono.just((Page<Product>) cachedData);
+            } else if (cachedData instanceof Map) {
+                Map<String, Object> map = (Map<String, Object>) cachedData;
+                List<Map<String, Object>> content = (List<Map<String, Object>>) map.get("content");
+                List<Product> products = new ArrayList<>();
+                for (Map<String, Object> item : content) {
+                    Product product = new Product();
+                    product.setId(((Number) item.get("id")).longValue());
+                    product.setName((String) item.get("name"));
+                    product.setDescription((String) item.get("description"));
+                    product.setPrice(BigDecimal.valueOf(((Number) item.get("price")).doubleValue()));
+                    product.setImgPath((String) item.get("imgPath"));
+                    product.setCount(((Number) item.get("count")).intValue());
+                    products.add(product);
+                }
+                Pageable pageable = PageRequest.of(page, size);
+                return Mono.just(new PageImpl<>(products, pageable, ((Number) map.get("totalElements")).longValue()));
+            }
+        }
+
+        Sort sort = direction.equalsIgnoreCase("asc") ?
+                Sort.by(field).ascending() :
+                Sort.by(field).descending();
+
+        Pageable pageable = PageRequest.of(page, size, sort);
+        return productRepository.findAllBy(pageable)
+                .collectList()
+                .zipWith(productRepository.count())
+                .map(t -> {
+                    Page<Product> pageResult = new PageImpl<>(t.getT1(), PageRequest.of(page, size), t.getT2());
+                    // Cache the result
+                    redisTemplate.opsForValue().set(cacheKey, pageResult, ttl, TimeUnit.MINUTES);
+                    return pageResult;
+                });
+    }
+
+    /**
+     * Search products by name with pagination and sorting
+     */
+    public Mono<Page<Product>> searchProductsByName(String keyword, int page, int size,
+                                              String sortField, String direction) {
+        String cacheKey = String.format("products:search:%s:%d:%d:%s:%s",
+            keyword, page, size, sortField, direction);
+
+        // Try to get from cache first
+        Object cachedData = redisTemplate.opsForValue().get(cacheKey);
+        if (cachedData != null) {
+            if (cachedData instanceof Page) {
+                return Mono.just((Page<Product>) cachedData);
+            } else if (cachedData instanceof Map) {
+                Map<String, Object> map = (Map<String, Object>) cachedData;
+                List<Map<String, Object>> content = (List<Map<String, Object>>) map.get("content");
+                List<Product> products = new ArrayList<>();
+                for (Map<String, Object> item : content) {
+                    Product product = new Product();
+                    product.setId(((Number) item.get("id")).longValue());
+                    product.setName((String) item.get("name"));
+                    product.setDescription((String) item.get("description"));
+                    product.setPrice(BigDecimal.valueOf(((Number) item.get("price")).doubleValue()));
+                    product.setImgPath((String) item.get("imgPath"));
+                    product.setCount(((Number) item.get("count")).intValue());
+                    products.add(product);
+                }
+                Pageable pageable = PageRequest.of(page, size);
+                return Mono.just(new PageImpl<>(products, pageable, ((Number) map.get("totalElements")).longValue()));
+            }
+        }
+
+        Sort sort = direction.equalsIgnoreCase("asc") ?
+                Sort.by(sortField).ascending() :
+                Sort.by(sortField).descending();
+
+        Pageable pageable = PageRequest.of(page, size, sort);
+        return productRepository.findByNameContainingIgnoreCase(keyword, pageable)
+                .collectList()
+                .zipWith(productRepository.count())
+                .map(t -> {
+                    Page<Product> pageResult = new PageImpl<>(t.getT1(), PageRequest.of(page, size), t.getT2());
+                    // Cache the result
+                    redisTemplate.opsForValue().set(cacheKey, pageResult, ttl, TimeUnit.MINUTES);
+                    return pageResult;
+                });
+    }
+}

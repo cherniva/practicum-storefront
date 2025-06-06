@@ -1,7 +1,7 @@
 package com.cherniva.storefront.controller;
 
 import com.cherniva.storefront.model.Product;
-import com.cherniva.storefront.service.ProductPageService;
+import com.cherniva.storefront.service.ProductService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
@@ -27,14 +27,14 @@ public class MainControllerTest {
     private WebTestClient webTestClient;
 
     @MockBean
-    private ProductPageService productPageService;
+    private ProductService productService;
 
     @Test
     public void testGetProductsDefault() {
         List<Product> products = createTestProducts();
         Page<Product> productPage = new PageImpl<>(products, PageRequest.of(0, 10), products.size());
 
-        when(productPageService.getProductsSortedBy(anyInt(), anyInt(), anyString(), anyString()))
+        when(productService.getProductsSortedBy(anyInt(), anyInt(), anyString(), anyString()))
                 .thenReturn(Mono.just(productPage));
 
         webTestClient.get()
@@ -56,7 +56,7 @@ public class MainControllerTest {
         List<Product> products = createTestProducts();
         Page<Product> productPage = new PageImpl<>(products, PageRequest.of(0, 10), products.size());
 
-        when(productPageService.searchProductsByName(anyString(), anyInt(), anyInt(), anyString(), anyString()))
+        when(productService.searchProductsByName(anyString(), anyInt(), anyInt(), anyString(), anyString()))
                 .thenReturn(Mono.just(productPage));
 
         webTestClient.get()
@@ -81,7 +81,7 @@ public class MainControllerTest {
         List<Product> products = createTestProducts();
         Page<Product> productPage = new PageImpl<>(products, PageRequest.of(0, 10), products.size());
 
-        when(productPageService.getProductsSortedBy(anyInt(), anyInt(), anyString(), anyString()))
+        when(productService.getProductsSortedBy(anyInt(), anyInt(), anyString(), anyString()))
                 .thenReturn(Mono.just(productPage));
 
         webTestClient.get()

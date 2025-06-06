@@ -1,7 +1,7 @@
 package com.cherniva.storefront.controller;
 
 import com.cherniva.storefront.model.Product;
-import com.cherniva.storefront.service.ProductPageService;
+import com.cherniva.storefront.service.ProductService;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -15,10 +15,10 @@ import java.util.List;
 @Controller
 public class MainController {
 
-    private final ProductPageService productPageService;
+    private final ProductService productService;
 
-    public MainController(ProductPageService productPageService) {
-        this.productPageService = productPageService;
+    public MainController(ProductService productService) {
+        this.productService = productService;
     }
 
     @GetMapping({"", "/", "/home", "/main", "/main/products"})
@@ -31,9 +31,9 @@ public class MainController {
 
         Mono<Page<Product>> productsPage;
         if (search != null)
-            productsPage = productPageService.searchProductsByName(search, pageNumber-1, pageSize, field, "ASC");
+            productsPage = productService.searchProductsByName(search, pageNumber-1, pageSize, field, "ASC");
         else
-            productsPage = productPageService.getProductsSortedBy(pageNumber-1, pageSize, field, "ASC");
+            productsPage = productService.getProductsSortedBy(pageNumber-1, pageSize, field, "ASC");
 
         return productsPage.doOnNext(page -> {
                     List<Product> products = page.getContent();
