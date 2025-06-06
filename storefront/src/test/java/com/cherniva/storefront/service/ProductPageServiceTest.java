@@ -23,13 +23,13 @@ import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(MockitoExtension.class)
-class ProductServiceTest {
+class ProductPageServiceTest {
 
     @Mock
     private ProductR2dbcRepository productRepository;
 
     @InjectMocks
-    private ProductService productService;
+    private ProductPageService productPageService;
 
     private Product product1;
     private Product product2;
@@ -57,7 +57,7 @@ class ProductServiceTest {
         when(productRepository.count()).thenReturn(Mono.just(2L));
 
         // Act & Assert
-        StepVerifier.create(productService.getProductsSortedBy(0, 10, "name", "asc"))
+        StepVerifier.create(productPageService.getProductsSortedBy(0, 10, "name", "asc"))
             .assertNext(page -> {
                 assertNotNull(page);
                 assertEquals(2, page.getContent().size());
@@ -76,7 +76,7 @@ class ProductServiceTest {
         when(productRepository.count()).thenReturn(Mono.just(2L));
 
         // Act & Assert
-        StepVerifier.create(productService.getProductsSortedBy(0, 10, "price", "desc"))
+        StepVerifier.create(productPageService.getProductsSortedBy(0, 10, "price", "desc"))
             .assertNext(page -> {
                 assertNotNull(page);
                 assertEquals(2, page.getContent().size());
@@ -96,7 +96,7 @@ class ProductServiceTest {
         when(productRepository.count()).thenReturn(Mono.just(2L));
 
         // Act & Assert
-        StepVerifier.create(productService.searchProductsByName(keyword, 0, 10, "name", "asc"))
+        StepVerifier.create(productPageService.searchProductsByName(keyword, 0, 10, "name", "asc"))
             .assertNext(page -> {
                 assertNotNull(page);
                 assertEquals(2, page.getContent().size());
@@ -117,7 +117,7 @@ class ProductServiceTest {
         when(productRepository.count()).thenReturn(Mono.just(0L));
 
         // Act & Assert
-        StepVerifier.create(productService.searchProductsByName(keyword, 0, 10, "name", "asc"))
+        StepVerifier.create(productPageService.searchProductsByName(keyword, 0, 10, "name", "asc"))
             .assertNext(page -> {
                 assertNotNull(page);
                 assertTrue(page.getContent().isEmpty());

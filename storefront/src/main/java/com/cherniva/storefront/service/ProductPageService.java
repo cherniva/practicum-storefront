@@ -6,15 +6,12 @@ import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Service
-public class ProductService {
+public class ProductPageService {
 
     private final ProductR2dbcRepository productRepository;
 
-    public ProductService(ProductR2dbcRepository productRepository) {
+    public ProductPageService(ProductR2dbcRepository productRepository) {
         this.productRepository = productRepository;
     }
 
@@ -22,6 +19,7 @@ public class ProductService {
      * Get paginated products with dynamic sorting based on field name
      */
     public Mono<Page<Product>> getProductsSortedBy(int page, int size, String field, String direction) {
+        System.out.println("NO CACHE");
         Sort sort = direction.equalsIgnoreCase("asc") ?
                 Sort.by(field).ascending() :
                 Sort.by(field).descending();
