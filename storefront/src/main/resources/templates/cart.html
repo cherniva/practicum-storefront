@@ -53,7 +53,7 @@
             <b th:text="'Итого: '+${total}+' руб.'"></b>
         </td>
     </tr>
-    <tr>
+    <tr th:if="${balance >= total}">
         <td style="text-align:right">
             <form action="/buy" method="post" th:if="${!empty}">
                 <button>Купить</button>
