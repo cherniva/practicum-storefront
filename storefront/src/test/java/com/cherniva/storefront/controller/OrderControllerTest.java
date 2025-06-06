@@ -6,6 +6,7 @@ import com.cherniva.storefront.model.Product;
 import com.cherniva.storefront.repository.CustomerOrderR2dbcRepository;
 import com.cherniva.storefront.repository.OrderProductR2dbcRepository;
 import com.cherniva.storefront.repository.ProductR2dbcRepository;
+import com.cherniva.storefront.service.PaymentService;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +38,8 @@ public class OrderControllerTest {
 
     @MockBean
     private OrderProductR2dbcRepository orderProductRepo;
+    @MockBean
+    private PaymentService paymentService;
 
     @Test
     public void testPlaceOrder() {

@@ -2,6 +2,7 @@ package com.cherniva.storefront.controller;
 
 import com.cherniva.storefront.model.Product;
 import com.cherniva.storefront.repository.ProductR2dbcRepository;
+import com.cherniva.storefront.service.PaymentService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
@@ -25,6 +26,8 @@ public class CartControllerTest {
 
     @MockBean
     private ProductR2dbcRepository productRepository;
+    @MockBean
+    private PaymentService paymentService;
 
     @Test
     public void testGetCart() {
