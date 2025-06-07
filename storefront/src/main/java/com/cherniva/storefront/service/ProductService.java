@@ -122,4 +122,34 @@ public class ProductService {
                     return pageResult;
                 });
     }
+
+    public Mono<Product> findById(Long id) {
+        String cacheKey = String.format("product:%d", id);
+        
+        // Try to get from cache first
+        Object cachedProduct = redisTemplate.opsForValue().get(cacheKey);
+        if (cachedProduct != null) {
+            if (cachedProduct instanceof Product) {
+                return Mono.just((Product) cachedProduct);
+            } else if (cachedProduct instanceof Map) {
+                Map<String, Object> map = (Map<String, Object>) cachedProduct;
+                Product product = new Product();
+                product.setId(((Number) map.get("id")).longValue());
+                product.setName((String) map.get("name"));
+                product.setDescription((String) map.get("description"));
+                product.setPrice(BigDecimal.valueOf(((Number) map.get("price")).doubleValue()));
+                product.setImgPath((String) map.get("imgPath"));
+                product.setCount(((Number) map.get("count")).intValue());
+                return Mono.just(product);
+            }
+        }
+
+        // If not in cache, get from database
+        return productRepository.findById(id)
+                .doOnNext(product -> redisTemplate.opsForValue().set(cacheKey, product, ttl, TimeUnit.MINUTES));
+    }
+
+    public Mono<Product> save(Product product) {
+        return productRepository.save(product);
+    }
 }

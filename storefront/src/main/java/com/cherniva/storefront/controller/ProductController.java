@@ -2,6 +2,7 @@ package com.cherniva.storefront.controller;
 
 import com.cherniva.storefront.model.Product;
 import com.cherniva.storefront.repository.ProductR2dbcRepository;
+import com.cherniva.storefront.service.ProductService;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -32,15 +33,15 @@ import java.util.stream.IntStream;
 @Controller
 public class ProductController {
     private static final Logger logger = LoggerFactory.getLogger(ProductController.class);
-    private final ProductR2dbcRepository productRepository;
+    private final ProductService productService;
 
-    public ProductController(ProductR2dbcRepository productRepository) {
-        this.productRepository = productRepository;
+    public ProductController(ProductService productService) {
+        this.productService = productService;
     }
 
     @GetMapping("/products/{id}")
     public Mono<String> getProduct(@PathVariable("id") Long id, Model model) {
-        return productRepository.findById(id)
+        return productService.findById(id)
                 .doOnNext(product -> model.addAttribute("product", product))
                 .map(product -> "product");
     }
@@ -55,7 +56,7 @@ public class ProductController {
                     
                     logger.info("Received addToCart request - id: {}, action: {}, referer: {}", id, action, referer);
                     
-                    return productRepository.findById(id)
+                    return productService.findById(id)
                             .switchIfEmpty(Mono.error(new RuntimeException("Product not found with id: " + id)))
                             .flatMap(product -> {
                                 logger.info("Found product: {}", product);
@@ -67,7 +68,7 @@ public class ProductController {
                                 };
 
                                 product.setCount(count);
-                                return productRepository.save(product);
+                                return productService.save(product);
                             })
                             .map(product -> {
                                 String redirectUrl = referer != null ? referer : "/products/" + id;
@@ -152,7 +153,7 @@ public class ProductController {
                     .flatMap(mono -> mono)
                     .flatMap(product -> {
                         logger.info("Saving product to database: {}", product);
-                        return productRepository.save(product);
+                        return productService.save(product);
                     })
                     .publishOn(Schedulers.boundedElastic())
                     .doOnSuccess(savedProduct -> {
@@ -186,14 +187,14 @@ public class ProductController {
         // Get upload directory from environment variable or use default
         String uploadDir = System.getenv("UPLOAD_DIR");
         if (uploadDir == null) {
-            uploadDir = "src/main/resources/static/uploads";
+            uploadDir = "uploads";
             logger.info("Using default upload directory: {}", uploadDir);
         } else {
             logger.info("Using custom upload directory from environment: {}", uploadDir);
         }
 
         // Create directory if it doesn't exist
-        Path uploadPath = Path.of(uploadDir);
+        Path uploadPath = Path.of(uploadDir).toAbsolutePath();
         try {
             Files.createDirectories(uploadPath);
             logger.info("Ensured upload directory exists at: {}", uploadPath);
@@ -203,7 +204,7 @@ public class ProductController {
 
         // Sanitize filename
         String extension = contentType.equals("image/png") ? ".png" : ".jpg";
-        String filename = name + extension;
+        String filename = name.replaceAll("[^a-zA-Z0-9.-]", "_") + extension;
         logger.info("Generated filename: {}", filename);
 
         // Save file
