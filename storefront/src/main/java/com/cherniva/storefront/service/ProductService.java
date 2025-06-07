@@ -150,6 +150,11 @@ public class ProductService {
     }
 
     public Mono<Product> save(Product product) {
-        return productRepository.save(product);
+        return productRepository.save(product)
+            .doOnNext(savedProduct -> {
+                // Clear all product-related caches
+                redisTemplate.delete(redisTemplate.keys("products:*"));
+                redisTemplate.delete(redisTemplate.keys("product:*"));
+            });
     }
 }

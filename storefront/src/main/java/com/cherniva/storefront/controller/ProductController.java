@@ -158,10 +158,11 @@ public class ProductController {
                     .publishOn(Schedulers.boundedElastic())
                     .doOnSuccess(savedProduct -> {
                         logger.info("Product saved successfully with ID: {}", savedProduct.getId());
+                        logger.info("Cache cleared for all product-related entries");
                     })
                     .delayElement(Duration.ofMillis(500)) // Add a small delay to ensure file operations are completed
                     .map(savedProduct -> {
-                        logger.info("Redirecting to main products page");
+                        logger.info("Redirecting to main products page with fresh data");
                         return "redirect:/main/products";
                     })
                     .onErrorResume(e -> {
