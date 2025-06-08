@@ -16,6 +16,7 @@ services:
       - SPRING_R2DBC_PASSWORD=root
       - UPLOAD_DIR=/app/uploads
       - JAVA_OPTS=-Xmx512m -Xms256m
+      - PAYMENT_SERVICE_URL=http://payment:8081
     depends_on:
       redis:
         condition: service_healthy
