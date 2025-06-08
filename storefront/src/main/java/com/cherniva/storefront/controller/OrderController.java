@@ -7,6 +7,7 @@ import com.cherniva.storefront.repository.OrderProductR2dbcRepository;
 import com.cherniva.storefront.repository.CustomerOrderR2dbcRepository;
 import com.cherniva.storefront.repository.ProductR2dbcRepository;
 import com.cherniva.storefront.service.PaymentService;
+import com.cherniva.storefront.service.ProductService;
 import com.cherniva.storefront.utils.OrderUtils;
 import com.cherniva.storefront.utils.ProductUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -28,12 +29,14 @@ public class OrderController {
     private final ProductR2dbcRepository productRepository;
     private final OrderProductR2dbcRepository orderProductRepo;
     private final PaymentService paymentService;
+    private final ProductService productService;
 
-    public OrderController(CustomerOrderR2dbcRepository orderRepository, ProductR2dbcRepository productRepository, OrderProductR2dbcRepository orderProductRepo, PaymentService paymentService) {
+    public OrderController(CustomerOrderR2dbcRepository orderRepository, ProductR2dbcRepository productRepository, OrderProductR2dbcRepository orderProductRepo, PaymentService paymentService, ProductService productService) {
         this.orderRepository = orderRepository;
         this.productRepository = productRepository;
         this.orderProductRepo = orderProductRepo;
         this.paymentService = paymentService;
+        this.productService = productService;
     }
 
     @PostMapping("/buy")
@@ -101,6 +104,7 @@ public class OrderController {
                             );
                 })
                 .flatMap(savedOrder -> {
+                    productService.clearCache();
                     model.addAttribute("newOrder", true);
                     model.addAttribute("order", savedOrder);
                     return Mono.just("buy");

@@ -157,4 +157,9 @@ public class ProductService {
                 redisTemplate.delete(redisTemplate.keys("product:*"));
             });
     }
+
+    public void clearCache() {
+        redisTemplate.delete(redisTemplate.keys("products:*"));
+        redisTemplate.delete(redisTemplate.keys("product:*"));
+    }
 }
