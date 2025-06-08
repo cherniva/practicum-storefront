@@ -26,7 +26,7 @@ public class CartController {
     public Mono<String> getCart(Model model) {
         return productRepository.getProductsByCountGreaterThanZero()
                 .collectList()
-                .zipWith(paymentService.getBalance())
+                .zipWith(paymentService.getBalance().onErrorResume(e -> Mono.just(-1.0)))
                 .doOnNext(productsBalanceTuple -> {
                     List<Product> products = productsBalanceTuple.getT1();
                     Double balance = productsBalanceTuple.getT2();

@@ -53,6 +53,11 @@
             <b th:text="'Итого: '+${total}+' руб.'"></b>
         </td>
     </tr>
+    <tr th:if="${balance < 0}">
+        <td style="text-align:right">
+            <span style="color: red;">Платежный сервис недоступен</span>
+        </td>
+    </tr>
     <tr th:if="${balance >= total}">
         <td style="text-align:right">
             <form action="/buy" method="post" th:if="${!empty}">

@@ -10,7 +10,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 @Configuration
 public class PaymentClientConfig {
 
-    @Value("${payment.service.url:http://payment:8081}")
+    @Value("${payment.service.url:http://localhost:8081}")
     private String paymentServiceUrl;
 
     @Bean
