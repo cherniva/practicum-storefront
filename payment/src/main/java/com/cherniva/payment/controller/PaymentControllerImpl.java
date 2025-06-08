@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
@@ -29,19 +31,29 @@ public class PaymentControllerImpl implements PaymentApi, BalanceApi {
 
     @Override
     public Mono<ResponseEntity<Double>> processPayment(Double amount, ServerWebExchange exchange) {
-        return Mono.fromCallable(() -> {
-            if (amount <= 0) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Payment amount must be positive");
-            }
+        if (amount == null || amount <= 0.01) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
+                "Payment amount must be greater than 0.01");
+        }
 
-            return balance.updateAndGet(currentBalance -> {
+        return Mono.fromCallable(() -> 
+            balance.updateAndGet(currentBalance -> {
                 BigDecimal newBalance = currentBalance.subtract(BigDecimal.valueOf(amount));
                 if (newBalance.compareTo(BigDecimal.ZERO) < 0) {
                     throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                             "Insufficient balance. Current: " + currentBalance + ", Required: " + amount);
                 }
                 return newBalance;
-            });
-        }).map(newBalance -> ResponseEntity.ok(newBalance.doubleValue()));
+            })
+        ).map(newBalance -> ResponseEntity.ok(newBalance.doubleValue()))
+          .onErrorResume(ResponseStatusException.class, Mono::error);
+    }
+
+    @ExceptionHandler(jakarta.validation.ConstraintViolationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Mono<ResponseEntity<Error>> handleValidationExceptions(jakarta.validation.ConstraintViolationException ex) {
+        Error error = new Error()
+            .message(ex.getMessage());
+        return Mono.just(ResponseEntity.badRequest().body(error));
     }
 } 
