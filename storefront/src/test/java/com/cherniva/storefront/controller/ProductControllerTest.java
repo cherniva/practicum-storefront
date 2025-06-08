@@ -1,7 +1,7 @@
 package com.cherniva.storefront.controller;
 
 import com.cherniva.storefront.model.Product;
-import com.cherniva.storefront.repository.ProductR2dbcRepository;
+import com.cherniva.storefront.service.ProductService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
@@ -30,7 +30,7 @@ public class ProductControllerTest {
     private WebTestClient webTestClient;
 
     @MockBean
-    private ProductR2dbcRepository productRepository;
+    private ProductService productRepository;
 
     @Test
     public void testGetProduct() {

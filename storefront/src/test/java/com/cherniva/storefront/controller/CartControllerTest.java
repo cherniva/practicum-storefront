@@ -9,6 +9,7 @@ import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -48,6 +49,7 @@ public class CartControllerTest {
 
         when(productRepository.getProductsByCountGreaterThanZero())
             .thenReturn(Flux.fromIterable(productsInCart));
+        when(paymentService.getBalance()).thenReturn(Mono.just(1000.0));
 
         webTestClient.get()
                 .uri("/cart/products")
@@ -67,6 +69,7 @@ public class CartControllerTest {
     public void testGetEmptyCart() {
         when(productRepository.getProductsByCountGreaterThanZero())
             .thenReturn(Flux.empty());
+        when(paymentService.getBalance()).thenReturn(Mono.just(1000.0));
 
         webTestClient.get()
                 .uri("/cart/products")

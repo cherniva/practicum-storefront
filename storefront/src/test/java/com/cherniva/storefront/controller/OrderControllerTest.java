@@ -22,6 +22,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.Mockito.when;
 
 @WebFluxTest(OrderController.class)
@@ -80,6 +81,7 @@ public class OrderControllerTest {
         when(orderRepository.save(any(CustomerOrder.class))).thenReturn(Mono.just(order));
         when(orderProductRepo.saveAll(any(Iterable.class))).thenReturn(Flux.fromIterable(orderProducts));
         when(productRepository.save(any(Product.class))).thenReturn(Mono.just(product1));
+        when(paymentService.processPayment(anyDouble())).thenReturn(Mono.just(1000.0));
 
         webTestClient.post()
                 .uri("/buy")
@@ -107,6 +109,7 @@ public class OrderControllerTest {
         List<CustomerOrder> orders = Arrays.asList(order1, order2);
 
         when(orderRepository.findAll()).thenReturn(Flux.fromIterable(orders));
+        when(paymentService.processPayment(anyDouble())).thenReturn(Mono.just(1000.0));
 
         webTestClient.get()
                 .uri("/orders")
@@ -144,6 +147,7 @@ public class OrderControllerTest {
         when(orderRepository.findById(1L)).thenReturn(Mono.just(order));
         when(orderProductRepo.findByOrderId(1L)).thenReturn(Flux.just(orderProduct));
         when(productRepository.findById(1L)).thenReturn(Mono.just(product));
+        when(paymentService.processPayment(anyDouble())).thenReturn(Mono.just(1000.0));
 
         webTestClient.get()
                 .uri("/orders/1")

@@ -10,6 +10,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.*;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -30,10 +31,8 @@ class ProductServiceTest {
     private ProductR2dbcRepository productRepository;
     @Mock
     private RedisTemplate<String, Object> redisTemplate;
-    @Mock
-    private Integer ttl;
+    private Integer ttl = 1;
 
-    @InjectMocks
     private ProductService productService;
 
     private Product product1;
@@ -42,6 +41,7 @@ class ProductServiceTest {
 
     @BeforeEach
     void setUp() {
+        productService = new ProductService(productRepository, redisTemplate, ttl);
         product1 = new Product();
         product1.setId(1L);
         product1.setName("Test Product 1");
@@ -53,6 +53,9 @@ class ProductServiceTest {
         product2.setPrice(new BigDecimal("200.00"));
 
         productList = Arrays.asList(product1, product2);
+        ValueOperations valueOperationsMock = mock(ValueOperations.class);
+        when(redisTemplate.opsForValue()).thenReturn(valueOperationsMock);
+        when(valueOperationsMock.get(any())).thenReturn(null);
     }
 
     @Test
