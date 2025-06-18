@@ -12,8 +12,6 @@ import java.util.List;
 @Repository
 public interface ProductR2dbcRepository extends R2dbcRepository<Product, Long> {
     Flux<Product> getByName(String name);
-    @Query("SELECT * FROM product WHERE count IS NOT NULL AND count > 0")
-    Flux<Product> getProductsByCountGreaterThanZero();
     Flux<Product> findAllBy(Pageable pageable);
     Flux<Product> findByNameContainingIgnoreCase(String name, Pageable pageable);
 }
