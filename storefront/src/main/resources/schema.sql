@@ -1,6 +1,6 @@
-DROP TABLE IF EXISTS order_product;
-DROP TABLE IF EXISTS customer_order;
-DROP TABLE IF EXISTS product;
+--DROP TABLE IF EXISTS order_product;
+--DROP TABLE IF EXISTS customer_order;
+--DROP TABLE IF EXISTS product;
 
 CREATE TABLE IF NOT EXISTS user (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS user (
 );
 
 -- Create Product table
-CREATE TABLE product (
+CREATE TABLE IF NOT EXISTS product (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255),
     description TEXT,
@@ -18,7 +18,7 @@ CREATE TABLE product (
 );
 
 -- Create CustomerOrder table
-CREATE TABLE customer_order (
+CREATE TABLE IF NOT EXISTS customer_order (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT NOT NULL,
     total_sum DECIMAL(10, 2),
@@ -26,7 +26,7 @@ CREATE TABLE customer_order (
 );
 
 -- Create OrderProduct table (junction table)
-CREATE TABLE order_product (
+CREATE TABLE IF NOT EXISTS order_product (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     order_id BIGINT NOT NULL,
     product_id BIGINT NOT NULL,
