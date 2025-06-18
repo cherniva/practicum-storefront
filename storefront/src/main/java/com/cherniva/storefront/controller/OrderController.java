@@ -1,13 +1,15 @@
 package com.cherniva.storefront.controller;
 
+import com.cherniva.storefront.converter.ProductConverter;
+import com.cherniva.storefront.dto.ProductDto;
 import com.cherniva.storefront.model.CustomerOrder;
 import com.cherniva.storefront.model.OrderProduct;
 import com.cherniva.storefront.model.Product;
-import com.cherniva.storefront.repository.OrderProductR2dbcRepository;
-import com.cherniva.storefront.repository.CustomerOrderR2dbcRepository;
-import com.cherniva.storefront.repository.ProductR2dbcRepository;
+import com.cherniva.storefront.model.UserProduct;
+import com.cherniva.storefront.repository.*;
 import com.cherniva.storefront.service.PaymentService;
 import com.cherniva.storefront.service.ProductService;
+import com.cherniva.storefront.service.UserService;
 import com.cherniva.storefront.utils.OrderUtils;
 import com.cherniva.storefront.utils.ProductUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -28,91 +30,94 @@ public class OrderController {
     private final CustomerOrderR2dbcRepository orderRepository;
     private final ProductR2dbcRepository productRepository;
     private final OrderProductR2dbcRepository orderProductRepo;
+    private final UserService userService;
+    private final UserProductR2dbcRepository userProductRepository;
     private final PaymentService paymentService;
     private final ProductService productService;
+    private final ProductConverter productConverter;
 
-    public OrderController(CustomerOrderR2dbcRepository orderRepository, ProductR2dbcRepository productRepository, OrderProductR2dbcRepository orderProductRepo, PaymentService paymentService, ProductService productService) {
+    public OrderController(CustomerOrderR2dbcRepository orderRepository, ProductR2dbcRepository productRepository,
+                           OrderProductR2dbcRepository orderProductRepo, UserService userService,
+                           UserProductR2dbcRepository userProductRepository, PaymentService paymentService,
+                           ProductService productService, ProductConverter productConverter) {
         this.orderRepository = orderRepository;
         this.productRepository = productRepository;
         this.orderProductRepo = orderProductRepo;
+        this.userService = userService;
+        this.userProductRepository = userProductRepository;
         this.paymentService = paymentService;
         this.productService = productService;
+        this.productConverter = productConverter;
     }
 
     @PostMapping("/buy")
     public Mono<String> placeOrder(Model model) {
-        Flux<Product> productsFlux = productRepository.getProductsByCountGreaterThanZero();
+        Mono<Long> userIdMono = userService.getActiveUserIdMono();
 
-        // Calculate total in reactive way
-        Mono<BigDecimal> totalAmountMono = ProductUtils.getTotalAmount(productsFlux);
+        return userIdMono.flatMap(userId -> {
+            Flux<UserProduct> userProductFlux = userProductRepository.findByUserId(userId);
+            return userProductFlux.flatMap(userProduct -> productRepository.findById(userProduct.getProductId())
+                    .map(product -> productConverter.productToProductDto(product, userProduct.getQuantity())))
+                    .collectList()
+                    .flatMap(productDtos -> {
+                        BigDecimal totalAmount = ProductUtils.getTotalAmount(productDtos);
+                        CustomerOrder order = new CustomerOrder();
+                        order.setUserId(userId);
+                        order.setTotalSum(totalAmount);
+                        return Mono.zip(Mono.just(productDtos), orderRepository.save(order));
+                    })
+                    .flatMap(tuple -> {
+                        List<ProductDto> products = tuple.getT1();
+                        CustomerOrder savedOrder = tuple.getT2();
+                        log.info("Processing order {} with {} products", savedOrder.getId(), products.size());
 
-        // Create order with calculated total
-        Mono<CustomerOrder> savedOrderMono = totalAmountMono
-                .flatMap(totalAmount -> {
-                    CustomerOrder order = new CustomerOrder();
-                    order.setTotalSum(totalAmount);
-                    return orderRepository.save(order);
-                });
-
-        // Process everything together
-        return Mono.zip(productsFlux.collectList(), savedOrderMono)
-                .flatMap(tuple -> {
-                    List<Product> products = tuple.getT1();
-                    CustomerOrder savedOrder = tuple.getT2();
-                    log.info("Processing order {} with {} products", savedOrder.getId(), products.size());
-
-                    // Create and save order products
-                    return Flux.fromIterable(products)
-                            .map(p -> {
-                                OrderProduct op = productToOrderProduct(p, savedOrder);
-                                log.info("Creating order product for product {} with quantity {}", p.getId(), op.getQuantity());
-                                return op;
-                            })
-                            .collectList()
-                            .flatMap(orderProducts -> {
-                                log.info("Saving {} order products", orderProducts.size());
-                                return orderProductRepo.saveAll(orderProducts)
-                                    .collectList()
-                                    .flatMap(savedOrderProducts -> {
-                                        log.info("Successfully saved {} order products", savedOrderProducts.size());
-                                        savedOrder.setProducts(savedOrderProducts);
-                                        return orderRepository.save(savedOrder)
-                                            .doOnSuccess(order -> log.info("Updated order {} with products", order.getId()));
-                                    });
-                            })
-                            .then(Mono.just(savedOrder))
-                            .flatMap(order -> 
-                                // Process payment first
-                                paymentService.processPayment(order.getTotalSum().doubleValue())
-                                    .doOnNext(balance -> log.info("Payment processed successfully. New balance: {}", balance))
-                                    .thenReturn(order)
-                            )
-                            .flatMap(order -> 
-                                // Reset product counts and save
-                                Flux.fromIterable(products)
-                                    .map(product -> {
-                                        log.info("Resetting count for product {} from {} to 0", 
-                                            product.getId(), product.getCount());
-                                        product.setCount(0);
-                                        return product;
-                                    })
-                                    .flatMap(productRepository::save)
-                                    .collectList()
-                                    .doOnNext(savedProducts -> 
-                                        log.info("Reset and saved {} products", savedProducts.size()))
-                                    .thenReturn(order)
-                            );
-                })
-                .flatMap(savedOrder -> {
-                    productService.clearCache();
-                    model.addAttribute("newOrder", true);
-                    model.addAttribute("order", savedOrder);
-                    return Mono.just("buy");
-                })
-                .onErrorResume(e -> {
-                    log.error("Error processing order: ", e);
-                    return Mono.just("error");
-                });
+                        // Create and save order products
+                        return Flux.fromIterable(products)
+                                .map(p -> {
+                                    OrderProduct op = productToOrderProduct(p, savedOrder);
+                                    log.info("Creating order product for product {} with quantity {}", p.getId(), op.getQuantity());
+                                    return op;
+                                })
+                                .collectList()
+                                .flatMap(orderProducts -> {
+                                    log.info("Saving {} order products", orderProducts.size());
+                                    return orderProductRepo.saveAll(orderProducts)
+                                            .collectList()
+                                            .flatMap(savedOrderProducts -> {
+                                                log.info("Successfully saved {} order products", savedOrderProducts.size());
+                                                savedOrder.setProducts(savedOrderProducts);
+                                                return orderRepository.save(savedOrder)
+                                                        .doOnSuccess(order -> log.info("Updated order {} with products", order.getId()));
+                                            });
+                                })
+                                .then(Mono.just(savedOrder))
+                                .flatMap(order ->
+                                        // Process payment first
+                                        paymentService.processPayment(order.getTotalSum().doubleValue())
+                                                .doOnNext(balance -> log.info("Payment processed successfully. New balance: {}", balance))
+                                                .thenReturn(order)
+                                )
+                                .flatMap(order ->
+                                        // Reset product counts and save
+                                        Flux.fromIterable(products)
+                                                .flatMap(productDto -> userProductRepository.findByUserIdAndProductId(userId, productDto.getId())
+                                                        .flatMap(userProduct -> userProductRepository.delete(userProduct)))
+                                                .then()
+                                                .doOnSuccess(unused -> log.info("Deleted user-product associations for {} products", products.size()))
+                                                .thenReturn(order)
+                                );
+                    })
+                    .flatMap(savedOrder -> {
+                        productService.clearCache();
+                        model.addAttribute("newOrder", true);
+                        model.addAttribute("order", savedOrder);
+                        return Mono.just("buy");
+                    })
+                    .onErrorResume(e -> {
+                        log.error("Error processing order: ", e);
+                        return Mono.just("error");
+                    });
+        });
     }
 
     @GetMapping("/orders")
@@ -139,10 +144,6 @@ public class OrderController {
                             op.getId(), op.getProductId(), op.getQuantity()))
                         .flatMap(orderProduct -> 
                             productRepository.findById(orderProduct.getProductId())
-                                .doOnNext(product -> {
-                                    log.info("Found product: id={}, name={}", product.getId(), product.getName());
-                                    orderProduct.setProduct(product);
-                                })
                                 .thenReturn(orderProduct)
                         )
                         .collectList()
@@ -162,15 +163,13 @@ public class OrderController {
                 .map(order -> "buy");
     }
 
-    private OrderProduct productToOrderProduct(Product product, CustomerOrder order) {
+    private OrderProduct productToOrderProduct(ProductDto productDto, CustomerOrder order) {
         OrderProduct orderProduct = new OrderProduct();
-        orderProduct.setProduct(product);
-        orderProduct.setOrder(order);
-        orderProduct.setQuantity(product.getCount());
+        orderProduct.setQuantity(productDto.getCount());
         orderProduct.setOrderId(order.getId());
-        orderProduct.setProductId(product.getId());
-        log.info("Created OrderProduct: productId={}, orderId={}, quantity={}", 
-            product.getId(), order.getId(), product.getCount());
+        orderProduct.setProductId(productDto.getId());
+        log.info("Created OrderProduct: productId={}, orderId={}, quantity={}",
+                productDto.getId(), order.getId(), productDto.getCount());
         return orderProduct;
     }
 }

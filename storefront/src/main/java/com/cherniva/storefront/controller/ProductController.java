@@ -1,9 +1,18 @@
 package com.cherniva.storefront.controller;
 
+import com.cherniva.storefront.converter.ProductConverter;
+import com.cherniva.storefront.model.OrderProduct;
 import com.cherniva.storefront.model.Product;
+import com.cherniva.storefront.model.User;
+import com.cherniva.storefront.model.UserProduct;
 import com.cherniva.storefront.repository.ProductR2dbcRepository;
+import com.cherniva.storefront.repository.UserProductR2dbcRepository;
+import com.cherniva.storefront.repository.UserR2dbcRepository;
 import com.cherniva.storefront.service.ProductService;
+import com.cherniva.storefront.service.UserService;
 import jakarta.transaction.Transactional;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -25,6 +34,7 @@ import java.nio.file.StandardCopyOption;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.file.StandardOpenOption;
 import java.nio.ByteBuffer;
+import java.security.Principal;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,43 +44,71 @@ import java.util.stream.IntStream;
 public class ProductController {
     private static final Logger logger = LoggerFactory.getLogger(ProductController.class);
     private final ProductService productService;
+    private final ProductConverter productConverter;
+    private final UserService userService;
+    private final UserProductR2dbcRepository userProductRepository;
 
-    public ProductController(ProductService productService) {
+    public ProductController(ProductService productService, ProductConverter productConverter,
+                             UserService userService, UserProductR2dbcRepository userProductRepository) {
         this.productService = productService;
+        this.productConverter = productConverter;
+        this.userService = userService;
+        this.userProductRepository = userProductRepository;
     }
 
     @GetMapping("/products/{id}")
     public Mono<String> getProduct(@PathVariable("id") Long id, Model model) {
-        return productService.findById(id)
-                .doOnNext(product -> model.addAttribute("product", product))
-                .map(product -> "product");
+        Mono<Long> userIdMono = userService.getActiveUserIdMono();
+
+        return Mono.zip(userIdMono, Mono.just(id))
+                .flatMap(tuple -> userProductRepository.findByUserIdAndProductId(tuple.getT1(), tuple.getT2()))
+                .flatMap(userProduct -> productService.findById(userProduct.getProductId())
+                        .map(product -> productConverter.productToProductDto(product, userProduct.getQuantity())))
+                .doOnNext(productDto -> model.addAttribute("product", productDto))
+                .map(userProduct -> "product");
     }
 
     @PostMapping({"/products/{id}", "/main/products/{id}", "/cart/products/{id}"})
     public Mono<String> addToCart(@PathVariable("id") Long id,
                                   ServerWebExchange exchange) {
+        Mono<Long> userIdMono = userService.getActiveUserIdMono();
+
         return exchange.getFormData()
                 .flatMap(formData -> {
                     String action = formData.getFirst("action");
                     String referer = exchange.getRequest().getHeaders().getFirst("referer");
                     
                     logger.info("Received addToCart request - id: {}, action: {}, referer: {}", id, action, referer);
-                    
-                    return productService.findById(id)
-                            .switchIfEmpty(Mono.error(new RuntimeException("Product not found with id: " + id)))
-                            .flatMap(product -> {
-                                logger.info("Found product: {}", product);
-                                Integer count = switch (action) {
-                                    case "plus" -> product.getCount() + 1;
-                                    case "minus" -> Math.max(0, product.getCount() - 1);
-                                    case "delete" -> 0;
-                                    default -> throw new IllegalStateException("Unexpected value: " + action);
-                                };
 
-                                product.setCount(count);
-                                return productService.save(product);
-                            })
-                            .map(product -> {
+                    return userIdMono.flatMap(userId -> userProductRepository.findByUserIdAndProductId(userId, id)
+                                    .switchIfEmpty(
+                                            Mono.defer(() -> {
+                                                UserProduct userProduct = new UserProduct();
+                                                userProduct.setUserId(userId);
+                                                userProduct.setProductId(id);
+                                                userProduct.setQuantity(1);
+                                                return userProductRepository.save(userProduct);
+                                            })
+                                    )
+                                    .flatMap(userProduct -> {
+                                        int newQuantity = switch (action) {
+                                            case "plus" -> userProduct.getQuantity() + 1;
+                                            case "minus" -> userProduct.getQuantity() - 1;
+                                            case "delete" -> 0;
+                                            default -> throw new IllegalStateException("Unexpected value: " + action);
+                                        };
+
+                                        if (newQuantity <= 0) {
+                                            return userProductRepository.delete(userProduct).then(Mono.empty());
+                                        } else {
+                                            userProduct.setQuantity(newQuantity);
+                                            return userProductRepository.save(userProduct);
+                                        }
+                                    })
+                            )
+                            .flatMap(userProduct -> productService.findById(userProduct.getProductId())
+                                    .map(product -> productConverter.productToProductDto(product, userProduct.getQuantity())))
+                            .map(productDto -> {
                                 String redirectUrl = referer != null ? referer : "/products/" + id;
                                 logger.info("Redirecting to: {}", redirectUrl);
                                 return "redirect:" + redirectUrl;
@@ -140,7 +178,6 @@ public class ProductController {
                             product.setName(name);
                             product.setDescription(description);
                             product.setPrice(new BigDecimal(price));
-                            product.setCount(0);
 
                             return saveImageFile(product.getName(), imagePart)
                                 .map(imagePath -> {
