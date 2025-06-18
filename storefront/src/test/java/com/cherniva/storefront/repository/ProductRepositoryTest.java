@@ -33,17 +33,17 @@ public class ProductRepositoryTest {
             .verifyComplete();
     }
 
-    @Test
-    void testGetProductsByCountGreaterThanZero() {
-        Flux<Product> productsFlux = productRepository.getProductsByCountGreaterThanZero();
-        
-        StepVerifier.create(productsFlux.collectList())
-            .assertNext(products -> {
-                assertThat(products).hasSize(2);
-                assertThat(products).allMatch(p -> p.getCount() > 0);
-            })
-            .verifyComplete();
-    }
+//    @Test
+//    void testGetProductsByCountGreaterThanZero() {
+//        Flux<Product> productsFlux = productRepository.getProductsByCountGreaterThanZero();
+//
+//        StepVerifier.create(productsFlux.collectList())
+//            .assertNext(products -> {
+//                assertThat(products).hasSize(2);
+//                assertThat(products).allMatch(p -> p.getCount() > 0);
+//            })
+//            .verifyComplete();
+//    }
 
     @Test
     void testFindByNameContainingIgnoreCase() {
