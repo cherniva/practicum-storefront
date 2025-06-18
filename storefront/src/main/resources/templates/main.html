@@ -74,9 +74,9 @@
                     <tr>
                         <td>
                             <form th:action="@{/main/products/{id}(id=${product.getId()})}" method="post">
-                                <button type="submit" name="action" value="minus">-</button>
-                                <span th:text="${product.getCount()}"></span>
-                                <button type="submit" name="action" value="plus">+</button>
+                                <button type="submit" name="action" value="minus" th:if="${product.getCount()>0}">-</button>
+                                <span th:text="${product.getCount()}" th:if="${product.getCount()>0}"></span>
+                                <button type="submit" name="action" value="plus" th:if="${product.getCount()>0}">+</button>
                                 <button type="submit" name="action" value="plus" th:if="${product.getCount()==0}" style="float:right;">В корзину</button>
                             </form>
                         </td>
