@@ -20,6 +20,4 @@ public class Product {
 
     @Column("img_path")
     private String imgPath;
-
-    private Integer count;
 }

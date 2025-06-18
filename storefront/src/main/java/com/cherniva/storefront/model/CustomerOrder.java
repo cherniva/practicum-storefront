@@ -18,6 +18,8 @@ public class CustomerOrder {
     @Id
     private Long id;
 
+    private Long userId;
+
     @Column("total_sum")
     private BigDecimal totalSum;
 

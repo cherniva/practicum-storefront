@@ -51,7 +51,6 @@ public class ProductService {
                     product.setDescription((String) item.get("description"));
                     product.setPrice(BigDecimal.valueOf(((Number) item.get("price")).doubleValue()));
                     product.setImgPath((String) item.get("imgPath"));
-                    product.setCount(((Number) item.get("count")).intValue());
                     products.add(product);
                 }
                 Pageable pageable = PageRequest.of(page, size);
@@ -99,7 +98,6 @@ public class ProductService {
                     product.setDescription((String) item.get("description"));
                     product.setPrice(BigDecimal.valueOf(((Number) item.get("price")).doubleValue()));
                     product.setImgPath((String) item.get("imgPath"));
-                    product.setCount(((Number) item.get("count")).intValue());
                     products.add(product);
                 }
                 Pageable pageable = PageRequest.of(page, size);
@@ -139,7 +137,6 @@ public class ProductService {
                 product.setDescription((String) map.get("description"));
                 product.setPrice(BigDecimal.valueOf(((Number) map.get("price")).doubleValue()));
                 product.setImgPath((String) map.get("imgPath"));
-                product.setCount(((Number) map.get("count")).intValue());
                 return Mono.just(product);
             }
         }
