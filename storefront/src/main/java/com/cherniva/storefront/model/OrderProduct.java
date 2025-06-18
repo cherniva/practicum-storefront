@@ -10,7 +10,6 @@ import lombok.ToString;
 
 @Table("order_product")
 @Data
-@ToString(exclude = "order")
 public class OrderProduct {
     @Id
     private Long id;
@@ -22,11 +21,5 @@ public class OrderProduct {
     private Long productId;
 
     private Integer quantity;
-
-    // Transient fields for convenience - not mapped to database
-    @Transient
-    private CustomerOrder order;
-    @Transient
-    private Product product;
 }
 
