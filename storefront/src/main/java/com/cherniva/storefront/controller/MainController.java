@@ -49,7 +49,6 @@ public class MainController {
                                     @RequestParam(name = "pageSize", defaultValue = "10") int pageSize,
                                     @RequestParam(name = "search", required = false) String search,
                                     @RequestParam(name = "sort", required = false) String sort) {
-        System.out.println("[getProducts] Called with pageNumber=" + pageNumber + ", pageSize=" + pageSize + ", search=" + search + ", sort=" + sort);
         // Mono<Long> userIdMono = userService.getActiveUserIdMono();
         Mono<Long> userIdMono = userService.getActiveUserIdMono();
 

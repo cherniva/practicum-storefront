@@ -36,17 +36,6 @@ public class SecurityConfig {
             new UserDetailsRepositoryReactiveAuthenticationManager(userDetailsService);
         manager.setPasswordEncoder(passwordEncoder);
         
-        // Test password encoding
-        String testPassword = "123";
-        String encodedPassword = passwordEncoder.encode(testPassword);
-        boolean matches = passwordEncoder.matches(testPassword, encodedPassword);
-        System.out.println("[SecurityConfig] Password test - Original: " + testPassword + ", Encoded: " + encodedPassword + ", Matches: " + matches);
-        
-        // Test with the actual password from database
-        String dbPassword = "$2a$10$TuHQiSu41dRxXr2tQDNuDO8T4BBe6TpxSBoTIHKpHp8ac2RL5RML2";
-        boolean dbMatches = passwordEncoder.matches(testPassword, dbPassword);
-        System.out.println("[SecurityConfig] Database password test - Matches: " + dbMatches);
-        
         return manager;
     }
 
@@ -55,7 +44,10 @@ public class SecurityConfig {
                                                          ReactiveAuthenticationManager authenticationManager) {
         return http
                 .authorizeExchange(exchanges -> exchanges
-                        .pathMatchers("/login", "/debug/user").permitAll()
+                        .pathMatchers("", "/", "/home", "/main", "/main/products").permitAll() // main page
+                        .pathMatchers("/products/**").permitAll() // product card
+                        .pathMatchers("/images/**").permitAll() // images
+                        .pathMatchers("/login").permitAll() // login page
                         .anyExchange().authenticated()
                 )
                 .formLogin(Customizer.withDefaults())
@@ -65,7 +57,8 @@ public class SecurityConfig {
                             clearAllCookiesAndRedirect(webFilterExchange)
                         )
                 )
-                .csrf(ServerHttpSecurity.CsrfSpec::disable) // todo find another solution
+                .anonymous(Customizer.withDefaults())
+                .csrf(ServerHttpSecurity.CsrfSpec::disable) // todo find another solution to enable POST methods
                 .securityContextRepository(new WebSessionServerSecurityContextRepository())
                 .build();
     }

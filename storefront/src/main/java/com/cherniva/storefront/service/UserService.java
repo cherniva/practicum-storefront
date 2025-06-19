@@ -21,14 +21,15 @@ public class UserService {
         return ReactiveSecurityContextHolder.getContext()
                 .map(SecurityContext::getAuthentication)
                 .map(Principal::getName)
-                .flatMap(userRepository::findByUsername);
+                .flatMap(userRepository::findByUsername)
+                .switchIfEmpty(Mono.defer(() -> {
+                    User anonymousUser = new User();
+                    anonymousUser.setId(-1L);
+                    return Mono.just(anonymousUser);
+                }));
     }
 
     public Mono<Long> getActiveUserIdMono() {
-        return ReactiveSecurityContextHolder.getContext()
-                .map(SecurityContext::getAuthentication)
-                .map(Principal::getName)
-                .flatMap(userRepository::findByUsername)
-                .map(User::getId);
+        return getActiveUserMono().map(User::getId);
     }
 }
