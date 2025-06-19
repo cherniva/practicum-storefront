@@ -27,6 +27,7 @@
             <span th:text="${product.getDescription()}"></span>
         </p>
         <form th:action="@{/products/{id}(id=${product.getId()})}" method="post">
+<!--            <input type="hidden" name="_csrf" th:value="${_csrf != null ? _csrf.token : ''}"/>-->
             <button type="submit" name="action" value="minus" th:if="${product.getCount()>0}">-</button>
             <span th:text="${product.getCount()}" th:if="${product.getCount()>0}"></span>
             <button type="submit" name="action" value="plus" th:if="${product.getCount()>0}">+</button>

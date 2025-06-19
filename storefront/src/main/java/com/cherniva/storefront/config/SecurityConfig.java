@@ -9,10 +9,12 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.WebFilterExchange;
 import org.springframework.security.web.server.context.WebSessionServerSecurityContextRepository;
 import org.springframework.web.server.ServerWebExchange;
+import org.springframework.web.server.WebFilter;
 import reactor.core.publisher.Mono;
 
 @Configuration
@@ -61,9 +63,21 @@ public class SecurityConfig {
                             redirectToLoginWithLogoutParam(webFilterExchange)
                         )
                 )
+                .csrf(ServerHttpSecurity.CsrfSpec::disable) // todo find another solution
                 .securityContextRepository(new WebSessionServerSecurityContextRepository())
                 .build();
     }
+
+//    @Bean
+//    public WebFilter csrfTokenWebFilter() {
+//        return (exchange, chain) -> {
+//            CsrfToken token = exchange.getAttribute(CsrfToken.class.getName());
+//            if (token != null) {
+//                exchange.getAttributes().put("_csrf", token);
+//            }
+//            return chain.filter(exchange);
+//        };
+//    }
     
     private Mono<Void> redirectToLoginWithLogoutParam(WebFilterExchange webFilterExchange) {
         ServerWebExchange exchange = webFilterExchange.getExchange();

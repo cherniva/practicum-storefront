@@ -9,6 +9,7 @@ import com.cherniva.storefront.repository.UserProductR2dbcRepository;
 import com.cherniva.storefront.repository.UserR2dbcRepository;
 import com.cherniva.storefront.service.ProductService;
 import com.cherniva.storefront.service.UserService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
@@ -26,6 +27,7 @@ import java.util.Comparator;
 import java.util.List;
 
 @Controller
+@Slf4j
 public class MainController {
 
     private final ProductService productService;
@@ -49,29 +51,19 @@ public class MainController {
                                     @RequestParam(name = "sort", required = false) String sort) {
         System.out.println("[getProducts] Called with pageNumber=" + pageNumber + ", pageSize=" + pageSize + ", search=" + search + ", sort=" + sort);
         // Mono<Long> userIdMono = userService.getActiveUserIdMono();
-        Mono<Long> userIdMono = userService.getActiveUserIdMono()
-            .doOnNext(id -> System.out.println("[getProducts] userIdMono emitted: " + id))
-            .doOnError(e -> System.out.println("[getProducts] userIdMono error: " + e.getMessage()));
+        Mono<Long> userIdMono = userService.getActiveUserIdMono();
 
         String field = "ALPHA".equals(sort) ? "name" : "PRICE".equals(sort) ? "price" : "id";
 
-        // Mono<Page<Product>> productsPageMono;
-        // if (search != null)
-        //     productsPageMono = productService.searchProductsByName(search, pageNumber-1, pageSize, field, "ASC");
-        // else
-        //     productsPageMono = productService.getProductsSortedBy(pageNumber-1, pageSize, field, "ASC");
-        Mono<Page<Product>> productsPageMono = (search != null
+        Mono<Page<Product>> productsPageMono = search != null
             ? productService.searchProductsByName(search, pageNumber-1, pageSize, field, "ASC")
-            : productService.getProductsSortedBy(pageNumber-1, pageSize, field, "ASC"))
-            .doOnNext(page -> System.out.println("[getProducts] productsPageMono emitted: " + page))
-            .doOnError(e -> System.out.println("[getProducts] productsPageMono error: " + e.getMessage()));
+            : productService.getProductsSortedBy(pageNumber-1, pageSize, field, "ASC");
         
         return Mono.zip(userIdMono, productsPageMono)
                 .flatMap(tuple -> {
                     Long userId = tuple.getT1();
                     Page<Product> page = tuple.getT2();
                     List<Product> products = page.getContent();
-                    System.out.println("[getProducts] userId=" + userId + ", products.size=" + products.size());
 
                     // For each product, get UserProduct and map to DTO
                     return Flux.fromIterable(products)
@@ -85,8 +77,6 @@ public class MainController {
                             )
                             .collectList()
                             .map(productDtos -> {
-                                System.out.println("[getProducts] productDtos.size=" + productDtos.size());
-                                // Optionally chunk into rows for the view
                                 productDtos.sort(Comparator.comparing(ProductDto::getId));
                                 int productsPerRow = 3;
                                 List<List<ProductDto>> productRows = new ArrayList<>();
@@ -102,8 +92,7 @@ public class MainController {
                             });
                 })
                 .onErrorResume(e -> {
-                    System.out.println("[getProducts] ERROR: " + e.getMessage());
-                    e.printStackTrace();
+                    log.error("", e);
                     model.addAttribute("errorMessage", e.getMessage());
                     return Mono.just("error");
                 });
