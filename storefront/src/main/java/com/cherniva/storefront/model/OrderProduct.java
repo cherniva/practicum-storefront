@@ -21,5 +21,8 @@ public class OrderProduct {
     private Long productId;
 
     private Integer quantity;
+
+    @Transient
+    private Product product;
 }
 

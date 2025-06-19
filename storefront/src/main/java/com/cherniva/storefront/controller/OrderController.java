@@ -108,11 +108,25 @@ public class OrderController {
                                 );
                     })
                     .flatMap(savedOrder -> {
+                        // Load product information for each order product
+                        return Flux.fromIterable(savedOrder.getProducts())
+                                .flatMap(orderProduct -> 
+                                    productService.findById(orderProduct.getProductId())
+                                        .doOnNext(product -> orderProduct.setProduct(product))
+                                        .thenReturn(orderProduct)
+                                )
+                                .collectList()
+                                .map(orderProducts -> {
+                                    savedOrder.setProducts(orderProducts);
+                                    return savedOrder;
+                                });
+                    })
+                    .doOnNext(savedOrder -> {
                         productService.clearCache();
                         model.addAttribute("newOrder", true);
                         model.addAttribute("order", savedOrder);
-                        return Mono.just("buy");
                     })
+                    .map(savedOrder -> "buy")
                     .onErrorResume(e -> {
                         log.error("Error processing order: ", e);
                         return Mono.just("error");
@@ -143,7 +157,8 @@ public class OrderController {
                         .doOnNext(op -> log.info("Found order product: id={}, productId={}, quantity={}", 
                             op.getId(), op.getProductId(), op.getQuantity()))
                         .flatMap(orderProduct -> 
-                            productRepository.findById(orderProduct.getProductId())
+                            productService.findById(orderProduct.getProductId())
+                                .doOnNext(product -> orderProduct.setProduct(product))
                                 .thenReturn(orderProduct)
                         )
                         .collectList()
