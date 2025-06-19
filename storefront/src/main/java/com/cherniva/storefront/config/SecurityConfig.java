@@ -7,6 +7,7 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UserDetailsRepositoryReactiveAuthenticationManager;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -21,6 +22,7 @@ import reactor.core.publisher.Mono;
 
 @Configuration
 @EnableWebSecurity
+@EnableReactiveMethodSecurity
 public class SecurityConfig {
     
     @Bean
@@ -45,6 +47,7 @@ public class SecurityConfig {
         return http
                 .authorizeExchange(exchanges -> exchanges
                         .pathMatchers("", "/", "/home", "/main", "/main/products").permitAll() // main page
+                        .pathMatchers("/products/new").authenticated()
                         .pathMatchers("/products/**").permitAll() // product card
                         .pathMatchers("/images/**").permitAll() // images
                         .pathMatchers("/login").permitAll() // login page

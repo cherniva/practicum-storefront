@@ -13,6 +13,7 @@ import com.cherniva.storefront.service.UserService;
 import com.cherniva.storefront.utils.OrderUtils;
 import com.cherniva.storefront.utils.ProductUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -50,6 +51,7 @@ public class OrderController {
         this.productConverter = productConverter;
     }
 
+    @PreAuthorize("isAuthenticated()")
     @PostMapping("/buy")
     public Mono<String> placeOrder(Model model) {
         Mono<Long> userIdMono = userService.getActiveUserIdMono();
@@ -134,6 +136,7 @@ public class OrderController {
         });
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/orders")
     public Mono<String> getOrders(Model model) {
         Mono<Long> userIdMono = userService.getActiveUserIdMono();
@@ -148,6 +151,7 @@ public class OrderController {
                 .map(orders -> "orders");
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/orders/{id}")
     public Mono<String> getOrder(Model model,
                                  @PathVariable("id") Long id) {

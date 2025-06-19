@@ -11,6 +11,7 @@ import com.cherniva.storefront.repository.UserR2dbcRepository;
 import com.cherniva.storefront.service.PaymentService;
 import com.cherniva.storefront.service.UserService;
 import com.cherniva.storefront.utils.ProductUtils;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.stereotype.Controller;
@@ -40,6 +41,7 @@ public class CartController {
         this.paymentService = paymentService;
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/cart/products")
     public Mono<String> getCart(Model model) {
         Mono<Long> userIdMono = userService.getActiveUserIdMono();

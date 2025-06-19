@@ -8,6 +8,7 @@ import com.cherniva.storefront.service.ProductService;
 import com.cherniva.storefront.service.UserService;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -64,6 +65,7 @@ public class ProductController {
                 .map(productDto -> "product");
     }
 
+    @PreAuthorize("isAuthenticated()")
     @PostMapping({"/products/{id}", "/main/products/{id}", "/cart/products/{id}"})
     public Mono<String> addToCart(@PathVariable("id") Long id,
                                   ServerWebExchange exchange) {
@@ -135,11 +137,13 @@ public class ProductController {
         return userProduct;
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("products/new")
     public Mono<String> getNewProductForm() {
         return Mono.just("add-product");
     }
 
+    @PreAuthorize("isAuthenticated()")
     @PostMapping(value = "products/new", consumes = "multipart/form-data")
     @Transactional
     public Mono<String> addNewProduct(ServerWebExchange exchange, Model model) {
