@@ -10,6 +10,9 @@
     <div class="container">
         <h1>Oops! Something went wrong</h1>
         <p>We encountered an error while processing your request.</p>
+        <div class="error-details" th:if="${errorMessage != null}">
+            <p th:text="${errorMessage}"></p>
+        </div>
         <div class="error-details" th:if="${error != null}">
             <p th:text="${error}"></p>
         </div>

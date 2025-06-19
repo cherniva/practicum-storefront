@@ -1,3 +1,7 @@
+-- Test user (password: password123)
+INSERT INTO user (username, password) 
+VALUES ('admin', '$2a$10$TuHQiSu41dRxXr2tQDNuDO8T4BBe6TpxSBoTIHKpHp8ac2RL5RML2');
+
 INSERT INTO product (name, description, price, img_path) 
 VALUES ('Baseball Cap', 'Stylish baseball cap for everyday wear', 19.99, 'images/cap.png');
 

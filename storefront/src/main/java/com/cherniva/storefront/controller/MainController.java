@@ -45,21 +45,31 @@ public class MainController {
                                     @RequestParam(name = "pageSize", defaultValue = "10") int pageSize,
                                     @RequestParam(name = "search", required = false) String search,
                                     @RequestParam(name = "sort", required = false) String sort) {
-        Mono<Long> userIdMono = userService.getActiveUserIdMono();
+        System.out.println("[getProducts] Called with pageNumber=" + pageNumber + ", pageSize=" + pageSize + ", search=" + search + ", sort=" + sort);
+        // Mono<Long> userIdMono = userService.getActiveUserIdMono();
+        Mono<Long> userIdMono = userService.getActiveUserIdMono()
+            .doOnNext(id -> System.out.println("[getProducts] userIdMono emitted: " + id))
+            .doOnError(e -> System.out.println("[getProducts] userIdMono error: " + e.getMessage()));
 
         String field = "ALPHA".equals(sort) ? "name" : "PRICE".equals(sort) ? "price" : "id";
 
-        Mono<Page<Product>> productsPageMono;
-        if (search != null)
-            productsPageMono = productService.searchProductsByName(search, pageNumber-1, pageSize, field, "ASC");
-        else
-            productsPageMono = productService.getProductsSortedBy(pageNumber-1, pageSize, field, "ASC");
-
+        // Mono<Page<Product>> productsPageMono;
+        // if (search != null)
+        //     productsPageMono = productService.searchProductsByName(search, pageNumber-1, pageSize, field, "ASC");
+        // else
+        //     productsPageMono = productService.getProductsSortedBy(pageNumber-1, pageSize, field, "ASC");
+        Mono<Page<Product>> productsPageMono = (search != null
+            ? productService.searchProductsByName(search, pageNumber-1, pageSize, field, "ASC")
+            : productService.getProductsSortedBy(pageNumber-1, pageSize, field, "ASC"))
+            .doOnNext(page -> System.out.println("[getProducts] productsPageMono emitted: " + page))
+            .doOnError(e -> System.out.println("[getProducts] productsPageMono error: " + e.getMessage()));
+        
         return Mono.zip(userIdMono, productsPageMono)
                 .flatMap(tuple -> {
                     Long userId = tuple.getT1();
                     Page<Product> page = tuple.getT2();
                     List<Product> products = page.getContent();
+                    System.out.println("[getProducts] userId=" + userId + ", products.size=" + products.size());
 
                     // For each product, get UserProduct and map to DTO
                     return Flux.fromIterable(products)
@@ -75,6 +85,7 @@ public class MainController {
                             )
                             .collectList()
                             .map(productDtos -> {
+                                System.out.println("[getProducts] productDtos.size=" + productDtos.size());
                                 // 6. Optionally chunk into rows for the view
                                 int productsPerRow = 3;
                                 List<List<ProductDto>> productRows = new ArrayList<>();
@@ -88,6 +99,12 @@ public class MainController {
                                 model.addAttribute("sort", sort);
                                 return "main";
                             });
+                })
+                .onErrorResume(e -> {
+                    System.out.println("[getProducts] ERROR: " + e.getMessage());
+                    e.printStackTrace();
+                    model.addAttribute("errorMessage", e.getMessage());
+                    return Mono.just("error");
                 });
     }
 
