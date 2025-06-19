@@ -33,7 +33,7 @@ public class SecurityConfig {
         manager.setPasswordEncoder(passwordEncoder);
         
         // Test password encoding
-        String testPassword = "password123";
+        String testPassword = "123";
         String encodedPassword = passwordEncoder.encode(testPassword);
         boolean matches = passwordEncoder.matches(testPassword, encodedPassword);
         System.out.println("[SecurityConfig] Password test - Original: " + testPassword + ", Encoded: " + encodedPassword + ", Matches: " + matches);
