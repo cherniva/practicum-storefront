@@ -54,7 +54,7 @@ public class CartController {
                     Double balance = productsBalanceTuple.getT2();
 
                     BigDecimal totalAmount = ProductUtils.getTotalAmount(productsDto);
-                    model.addAttribute("productsDto", productsDto);
+                    model.addAttribute("products", productsDto);
                     model.addAttribute("total", totalAmount);
                     model.addAttribute("empty", productsDto.isEmpty());
                     model.addAttribute("balance", balance);
