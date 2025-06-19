@@ -136,7 +136,9 @@ public class OrderController {
 
     @GetMapping("/orders")
     public Mono<String> getOrders(Model model) {
-        return orderRepository.findAll()
+        Mono<Long> userIdMono = userService.getActiveUserIdMono();
+
+        return userIdMono.flatMapMany(orderRepository::findByUserId)
                 .collectList()
                 .doOnNext(orders -> {
                     model.addAttribute("orders", orders);
