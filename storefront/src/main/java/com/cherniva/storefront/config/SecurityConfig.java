@@ -2,6 +2,8 @@ package com.cherniva.storefront.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpCookie;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UserDetailsRepositoryReactiveAuthenticationManager;
 import org.springframework.security.config.Customizer;
@@ -60,7 +62,7 @@ public class SecurityConfig {
                 .logout(logout -> logout
                         .logoutUrl("/logout")
                         .logoutSuccessHandler((webFilterExchange, authentication) -> 
-                            redirectToLoginWithLogoutParam(webFilterExchange)
+                            clearAllCookiesAndRedirect(webFilterExchange)
                         )
                 )
                 .csrf(ServerHttpSecurity.CsrfSpec::disable) // todo find another solution
@@ -78,6 +80,46 @@ public class SecurityConfig {
 //            return chain.filter(exchange);
 //        };
 //    }
+    
+    private Mono<Void> clearAllCookiesAndRedirect(WebFilterExchange webFilterExchange) {
+        ServerWebExchange exchange = webFilterExchange.getExchange();
+        
+        // Clear all cookies by setting them with max-age=0
+        exchange.getRequest().getCookies().forEach((name, cookies) -> {
+            cookies.forEach(cookie -> {
+                ResponseCookie clearedCookie = ResponseCookie.from(name, "")
+                        .path("/")
+                        .maxAge(0)
+                        .httpOnly(true)
+                        .secure(false) // Set to true if using HTTPS
+                        .sameSite("Lax")
+                        .build();
+                exchange.getResponse().addCookie(clearedCookie);
+            });
+        });
+        
+        // Also clear common session cookies explicitly
+        clearSpecificCookie(exchange, "JSESSIONID");
+        clearSpecificCookie(exchange, "SESSION");
+        clearSpecificCookie(exchange, "SPRING_SECURITY_CONTEXT");
+        
+        // Redirect to login page
+        String loginUrl = "/login?logout";
+        exchange.getResponse().getHeaders().add("Location", loginUrl);
+        exchange.getResponse().setStatusCode(org.springframework.http.HttpStatus.FOUND);
+        return exchange.getResponse().setComplete();
+    }
+    
+    private void clearSpecificCookie(ServerWebExchange exchange, String cookieName) {
+        ResponseCookie clearedCookie = ResponseCookie.from(cookieName, "")
+                .path("/")
+                .maxAge(0)
+                .httpOnly(true)
+                .secure(false) // Set to true if using HTTPS
+                .sameSite("Lax")
+                .build();
+        exchange.getResponse().addCookie(clearedCookie);
+    }
     
     private Mono<Void> redirectToLoginWithLogoutParam(WebFilterExchange webFilterExchange) {
         ServerWebExchange exchange = webFilterExchange.getExchange();
