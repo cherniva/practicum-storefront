@@ -21,6 +21,8 @@ import reactor.core.publisher.Mono;
 
 import java.security.Principal;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 @Controller
@@ -77,16 +79,15 @@ public class MainController {
                                     userProductRepository.findByUserIdAndProductId(userId, product.getId())
                                             .defaultIfEmpty(new UserProduct()) // If not found, return empty UserProduct
                                             .map(userProduct -> {
-                                                int quantity = userProduct.getQuantity();
-                                                ProductDto dto = productConverter.productToProductDto(product, quantity);
-                                                dto.setCount(userProduct.getQuantity() != null ? userProduct.getQuantity() : 0);
-                                                return dto;
+                                                int quantity = userProduct.getQuantity() == null ? 0 : userProduct.getQuantity();
+                                                return productConverter.productToProductDto(product, quantity);
                                             })
                             )
                             .collectList()
                             .map(productDtos -> {
                                 System.out.println("[getProducts] productDtos.size=" + productDtos.size());
-                                // 6. Optionally chunk into rows for the view
+                                // Optionally chunk into rows for the view
+                                productDtos.sort(Comparator.comparing(ProductDto::getId));
                                 int productsPerRow = 3;
                                 List<List<ProductDto>> productRows = new ArrayList<>();
                                 for (int i = 0; i < productDtos.size(); i += productsPerRow) {
