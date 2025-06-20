@@ -21,7 +21,11 @@ public class UserService {
         return ReactiveSecurityContextHolder.getContext()
                 .map(SecurityContext::getAuthentication)
                 .map(Principal::getName)
-                .flatMap(userRepository::findByUsername)
+                .flatMap(name -> {
+                    System.out.println(name);
+                    return userRepository.findByUsername(name);
+                })
+//                .flatMap(userRepository::findByUsername)
                 .switchIfEmpty(Mono.defer(() -> {
                     User anonymousUser = new User();
                     anonymousUser.setId(-1L);

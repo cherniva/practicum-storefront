@@ -54,6 +54,7 @@ public class SecurityConfig {
                         .anyExchange().authenticated()
                 )
                 .formLogin(Customizer.withDefaults())
+                .oauth2Login(Customizer.withDefaults())
                 .logout(logout -> logout
                         .logoutUrl("/logout")
                         .logoutSuccessHandler((webFilterExchange, authentication) -> 
