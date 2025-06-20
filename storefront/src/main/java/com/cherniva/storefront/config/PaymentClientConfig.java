@@ -3,6 +3,7 @@ package com.cherniva.storefront.config;
 import com.cherniva.storefront.client.ApiClient;
 import com.cherniva.storefront.client.api.PaymentApi;
 import com.cherniva.storefront.service.OAuth2TokenService;
+import com.cherniva.storefront.service.UserService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,26 +20,31 @@ public class PaymentClientConfig {
     private String paymentServiceUrl;
 
     @Bean
-    public WebClient paymentWebClient(OAuth2TokenService oAuth2TokenService) {
+    public WebClient paymentWebClient(OAuth2TokenService oAuth2TokenService, UserService userService) {
         return WebClient.builder()
                 .filter((request, next) -> {
                     log.info("Payment WebClient filter: Processing request to {}", request.url());
                     return oAuth2TokenService.getAccessToken()
                         .doOnNext(token -> log.info("Payment WebClient filter: Got token: {}", token.substring(0, Math.min(20, token.length())) + "..."))
                         .flatMap(token -> {
-                            // Create a new request with the Authorization header
-                            HttpHeaders newHeaders = new HttpHeaders();
-                            newHeaders.putAll(request.headers());
-                            newHeaders.add(HttpHeaders.AUTHORIZATION, "Bearer " + token);
-                            
-                            log.info("Payment WebClient filter: Added Authorization header");
-                            
-                            // Create a new request with the modified headers
-                            ClientRequest newRequest = ClientRequest.from(request)
-                                .headers(headers -> headers.putAll(newHeaders))
-                                .build();
-                            
-                            return next.exchange(newRequest);
+                            // Get current user ID from security context
+                            return userService.getActiveUserIdMono()
+                                .flatMap(userId -> {
+                                    // Create a new request with the Authorization header and user context
+                                    HttpHeaders newHeaders = new HttpHeaders();
+                                    newHeaders.putAll(request.headers());
+                                    newHeaders.add(HttpHeaders.AUTHORIZATION, "Bearer " + token);
+                                    newHeaders.add("X-User-ID", String.valueOf(userId));
+                                    
+                                    log.info("Payment WebClient filter: Added Authorization header and user ID: {}", userId);
+                                    
+                                    // Create a new request with the modified headers
+                                    ClientRequest newRequest = ClientRequest.from(request)
+                                        .headers(headers -> headers.putAll(newHeaders))
+                                        .build();
+                                    
+                                    return next.exchange(newRequest);
+                                });
                         })
                         .doOnError(error -> log.error("Payment WebClient filter: Error getting token or making request", error))
                         .onErrorResume(error -> {
