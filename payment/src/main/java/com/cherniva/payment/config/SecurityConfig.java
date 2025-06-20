@@ -2,6 +2,7 @@ package com.cherniva.payment.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.server.resource.authentication.ReactiveJwtAuthenticationConverter;
@@ -13,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 @Configuration
+@EnableReactiveMethodSecurity
 public class SecurityConfig {
     @Bean
     SecurityWebFilterChain securityFilterChain(ServerHttpSecurity security) throws Exception {

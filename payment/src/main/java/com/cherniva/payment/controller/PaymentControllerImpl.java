@@ -6,6 +6,7 @@ import com.cherniva.payment.model.Error;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -33,6 +34,7 @@ public class PaymentControllerImpl implements PaymentApi, BalanceApi {
     }
 
     @Override
+    @PreAuthorize("isAuthenticated()")
     public Mono<ResponseEntity<Double>> getBalance(ServerWebExchange exchange) {
         String userIdHeader = exchange.getRequest().getHeaders().getFirst("X-User-ID");
         
@@ -59,6 +61,7 @@ public class PaymentControllerImpl implements PaymentApi, BalanceApi {
     }
 
     @Override
+    @PreAuthorize("isAuthenticated()")
     public Mono<ResponseEntity<Double>> processPayment(Double amount, ServerWebExchange exchange) {
         if (amount == null || amount <= 0.01) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
