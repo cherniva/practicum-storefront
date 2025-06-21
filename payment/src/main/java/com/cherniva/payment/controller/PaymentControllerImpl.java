@@ -13,15 +13,17 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Controller
-@Slf4j
 public class PaymentControllerImpl implements PaymentApi, BalanceApi {
+    private static final Logger log = LoggerFactory.getLogger(PaymentControllerImpl.class);
+    
     // Global balance (used as default for new users)
     private final AtomicReference<BigDecimal> globalBalance;
     
