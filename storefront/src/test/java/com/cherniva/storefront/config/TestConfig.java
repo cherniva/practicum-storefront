@@ -24,4 +24,19 @@ public class TestConfig {
     public ReactiveTransactionManager transactionManager(ConnectionFactory connectionFactory) {
         return new R2dbcTransactionManager(connectionFactory);
     }
+
+    @Bean
+    public ConnectionFactoryInitializer connectionFactoryInitializer(ConnectionFactory connectionFactory) {
+        ConnectionFactoryInitializer initializer = new ConnectionFactoryInitializer();
+        initializer.setConnectionFactory(connectionFactory);
+        
+        CompositeDatabasePopulator populator = new CompositeDatabasePopulator();
+        populator.addPopulators(
+            new ResourceDatabasePopulator(new ClassPathResource("schema.sql")),
+            new ResourceDatabasePopulator(new ClassPathResource("data.sql"))
+        );
+        initializer.setDatabasePopulator(populator);
+        
+        return initializer;
+    }
 } 
