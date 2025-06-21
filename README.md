@@ -17,6 +17,22 @@ A web storefront application built with Spring Boot (3.4.5), using a reactive st
 - **Project Reactor** - Reactive streams implementation
 - **SpringDoc OpenAPI** - API documentation
 - **Redis** - Caching and session management
+- **Spring Security** - Authentication and authorization
+- **OAuth2** - Authorization framework
+- **Keycloak** - Identity and access management server
+
+## 🔐 Security & Authorization
+
+The application implements comprehensive security using:
+- **Spring Security** for authentication and authorization
+- **OAuth2** authorization framework for secure API access
+- **Keycloak** as the identity and access management server
+- **JWT tokens** for stateless authentication
+
+### Keycloak Integration
+- Keycloak server handles user authentication and authorization
+- Supports multiple authentication flows (Authorization Code, Client Credentials)
+- Provides single sign-on (SSO) capabilities
 
 ## 📋 Prerequisites
 
@@ -25,6 +41,7 @@ A web storefront application built with Spring Boot (3.4.5), using a reactive st
 - Maven 3.6 or later
 - Redis 7.0 or later (for local development)
 - Docker and Docker Compose (for containerized setup)
+- **Keycloak server** (for production and full functionality)
 
 ## 🏗️ Project Modules
 
@@ -46,19 +63,20 @@ The project consists of two main modules:
 1. Clone the repository
 2. Configure your MySQL database connection in `src/main/resources/application.properties`
 3. Ensure Redis is running on the default port (6379)
-4. Build all modules using Maven:
+4. **Set up Keycloak authorization and resource server configuration**
+5. Build all modules using Maven:
    ```bash
-   ./mvnw clean install
+   mvn clean install
    ```
-5. Start both modules:
+6. Start both modules:
    ```bash
    # Start the payment module
    cd payment
-   ./mvnw spring-boot:run
+   mvn spring-boot:run
 
    # In a separate terminal, start the storefront module
    cd storefront
-   ./mvnw spring-boot:run
+   mvn spring-boot:run
    ```
 
 ### Running with Docker
@@ -73,11 +91,17 @@ The project consists of two main modules:
    - Payment module
    - Storefront module
 
+   > ⚠️ **Important Note**: The Docker setup starts **without Keycloak server**. This means:
+   > - The payment service will **NOT be available** for authentication
+   > - OAuth2 authorization flows will not work
+   > - You'll need to set up Keycloak separately for full functionality
+   > - For development/testing, you can use the Maven setup with a local Keycloak instance
+
 2. Access the applications:
    - Storefront: `http://localhost:8080`
-   - Payment API: `http://localhost:8081`
+   - Payment API: `http://localhost:8081` (⚠️ **Not available without Keycloak**)
    - OpenAPI documentation: 
-     - Payment: `http://localhost:8081/swagger-ui.html`
+     - Payment: `http://localhost:8081/swagger-ui.html` (⚠️ **Not available without Keycloak**)
 
 ## 📚 API Documentation
 
