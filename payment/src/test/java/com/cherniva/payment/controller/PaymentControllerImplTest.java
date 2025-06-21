@@ -21,7 +21,7 @@ class PaymentControllerImplTest {
         webTestClient = WebTestClient.bindToController(paymentController).build();
     }
 
-    // Authenticated access tests
+    // X-User-ID Header Tests (existing functionality)
     @Test
     void getBalance_WithValidUserId_ShouldReturnInitialBalance() {
         webTestClient.get()
@@ -140,7 +140,7 @@ class PaymentControllerImplTest {
                 .isEqualTo(balance);
     }
 
-    // Unauthenticated access tests
+    // X-User-ID Header Validation Tests
     @Test
     void getBalance_WithoutUserId_ShouldReturnUnauthorized() {
         webTestClient.get()
